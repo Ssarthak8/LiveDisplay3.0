@@ -143,25 +143,34 @@ export default function TVDisplay() {
                   <div
                     key={slide._id || i}
                     className={cn(
-                      'absolute inset-0 transition-opacity duration-1000 ease-in-out',
+                      'absolute inset-0 transition-opacity duration-1000 ease-in-out flex items-center justify-center bg-surface-950',
                       i === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
                     )}
                   >
+                    {/* Ambient Blurred Background */}
+                    <img
+                      src={`${BASE_URL}${slide.imageUrl}`}
+                      alt=""
+                      className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-45 scale-105 select-none pointer-events-none"
+                    />
+
+                    {/* Main Contained Image */}
                     <img
                       src={`${BASE_URL}${slide.imageUrl}`}
                       alt={slide.title || 'Digital Signage'}
-                      className="w-full h-full object-cover select-none"
+                      className="relative z-10 max-w-full max-h-full object-contain select-none shadow-2xl"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.src = '';
                         target.classList.add('hidden');
                       }}
                     />
+
                     {/* Dark Overlay (25%) */}
-                    <div className="absolute inset-0 bg-black/25 z-10" />
+                    <div className="absolute inset-0 bg-black/20 z-20 pointer-events-none" />
 
                     {/* Title Overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-6 z-20">
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-6 z-30">
                       <h2 className="text-2xl font-bold text-white tracking-wide drop-shadow-lg">
                         {slide.title}
                       </h2>
