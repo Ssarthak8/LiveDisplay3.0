@@ -1,5 +1,6 @@
 import { Room } from '../models/Room.js';
 import { Schedule } from '../models/Schedule.js';
+import { AuditService } from './audit.service.js';
 import { AppError } from './auth.service.js';
 
 export class RoomService {
@@ -22,7 +23,7 @@ export class RoomService {
   /**
    * Create a new room.
    */
-  static async create(data: { roomNumber: string; building: string; capacity: number }) {
+  static async create(data: { roomNumber: string; building: string; capacity: number }, userId: string) {
     // Check for duplicates
     const existing = await Room.findOne({
       roomNumber: data.roomNumber,
@@ -35,25 +36,39 @@ export class RoomService {
       );
     }
     const room = await Room.create(data);
+
+    // Log audit
+    await AuditService.log('ROOM_CREATED', userId, 'room', room._id.toString(), {
+      roomNumber: data.roomNumber,
+      building: data.building,
+      capacity: data.capacity,
+    });
+
     return room.toJSON();
   }
 
   /**
    * Update an existing room.
    */
-  static async update(id: string, data: Partial<{ roomNumber: string; building: string; capacity: number }>) {
+  static async update(id: string, data: Partial<{ roomNumber: string; building: string; capacity: number }>, userId: string) {
     const room = await Room.findByIdAndUpdate(id, data, {
       new: true,
       runValidators: true,
     });
     if (!room) throw new AppError('Room not found', 404);
+
+    // Log audit
+    await AuditService.log('ROOM_UPDATED', userId, 'room', id, {
+      changes: data,
+    });
+
     return room.toJSON();
   }
 
   /**
    * Delete a room. Checks for associated schedules first.
    */
-  static async delete(id: string) {
+  static async delete(id: string, userId: string) {
     const schedulesCount = await Schedule.countDocuments({ roomId: id });
     if (schedulesCount > 0) {
       throw new AppError(
@@ -63,6 +78,13 @@ export class RoomService {
     }
     const room = await Room.findByIdAndDelete(id);
     if (!room) throw new AppError('Room not found', 404);
+
+    // Log audit
+    await AuditService.log('ROOM_DELETED', userId, 'room', id, {
+      roomNumber: room.roomNumber,
+      building: room.building,
+    });
+
     return room.toJSON();
   }
 }

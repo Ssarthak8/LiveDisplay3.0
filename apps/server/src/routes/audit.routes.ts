@@ -12,6 +12,7 @@ router.get('/', authenticate, authorize('superadmin', 'admin'), async (req: Requ
     const limit = req.query.limit ? Number(req.query.limit) : 20;
     const filters = {
       action: req.query.action as string,
+      resourceType: req.query.resourceType as string,
       startDate: req.query.startDate as string,
       endDate: req.query.endDate as string,
     };

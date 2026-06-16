@@ -8,6 +8,8 @@ export interface ServerToClientEvents {
   'room:created': (room: Room) => void;
   'room:updated': (room: Room) => void;
   'room:deleted': (data: { id: string }) => void;
+  'displayContent:updated': () => void;
+  'displayMedia:updated': () => void;
 }
 
 export interface ClientToServerEvents {

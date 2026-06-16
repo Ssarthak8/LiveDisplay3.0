@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useAuthStore } from '@/stores/authStore';
 import {
   useSchedules, useCreateSchedule, useUpdateSchedule,
   useDeleteSchedule, useRooms,
@@ -70,6 +71,8 @@ function ConflictRow({ label, value }: { label: string; value?: string }) {
 /* ═══════════════════════════════════════════════════════════ */
 export default function Schedules() {
   useSocketEvents();
+  const { user } = useAuthStore();
+  const isSuperAdmin = user?.role === 'superadmin';
 
   /* ── Filter state ── */
   const [viewMode,     setViewMode]     = useState<'list' | 'calendar'>('list');
@@ -324,7 +327,7 @@ export default function Schedules() {
                     <Th field="date">Date &amp; Time</Th>
                     <Th field="status">Status</Th>
                     <th className="text-left px-5 py-3 font-semibold text-surface-500 text-xs uppercase tracking-wider">Created By</th>
-                    <th className="text-right px-5 py-3 font-semibold text-surface-500 text-xs uppercase tracking-wider">Actions</th>
+                    {isSuperAdmin && <th className="text-right px-5 py-3 font-semibold text-surface-500 text-xs uppercase tracking-wider">Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -333,9 +336,12 @@ export default function Schedules() {
                       <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary-600" />
                     </td></tr>
                   ) : sortedSchedules.length === 0 ? (
-                    <tr><td colSpan={7} className="text-center py-12">
-                      <Calendar className="w-10 h-10 mx-auto text-surface-300 dark:text-surface-600 mb-3" />
-                      <p className="text-sm text-surface-500">No schedules found</p>
+                    <tr><td colSpan={isSuperAdmin ? 7 : 6} className="text-center py-12">
+                      <div className="empty-state">
+                        <Calendar className="empty-state-icon" />
+                        <p className="empty-state-title">No schedules found</p>
+                        <p className="empty-state-subtitle">Try adjusting your filters or create a new schedule</p>
+                      </div>
                     </td></tr>
                   ) : (
                     sortedSchedules.map((s: any) => (
@@ -375,22 +381,24 @@ export default function Schedules() {
                           <p className="text-xs text-surface-400">{s.createdBy?.email || ''}</p>
                         </td>
                         <td className="px-5 py-4 text-right">
-                          <div className="flex items-center justify-end gap-1">
+                          {isSuperAdmin && (
+                          <div className="flex items-center justify-end gap-1 row-actions">
                             <button
                               onClick={() => openEdit(s)}
                               className="p-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20 text-surface-400 hover:text-primary-700 dark:hover:text-primary-400 transition-colors"
-                              title="Edit"
+                              title="Edit" aria-label="Edit schedule"
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => setShowDeleteConfirm(s._id)}
                               className="p-1.5 rounded-md hover:bg-danger-50 dark:hover:bg-danger-900/20 text-surface-400 hover:text-danger-600 dark:hover:text-danger-400 transition-colors"
-                              title="Delete"
+                              title="Delete" aria-label="Delete schedule"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -403,16 +411,26 @@ export default function Schedules() {
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-5 py-3 border-t border-surface-200 dark:border-surface-700">
                 <p className="text-xs text-surface-500">
-                  Page <span className="font-semibold text-surface-700 dark:text-surface-300">{page}</span> of{' '}
-                  <span className="font-semibold text-surface-700 dark:text-surface-300">{totalPages}</span>
+                  Showing <span className="font-semibold text-surface-700 dark:text-surface-300">{((page - 1) * 10) + 1}–{Math.min(page * 10, schedulesData?.total || 0)}</span> of{' '}
+                  <span className="font-semibold text-surface-700 dark:text-surface-300">{schedulesData?.total || 0}</span> results
                 </p>
                 <div className="flex gap-1">
                   <button disabled={page <= 1} onClick={() => setPage(page - 1)}
-                    className="btn-secondary py-1 px-2 disabled:opacity-40">
+                    className="pagination-btn" aria-label="Previous page">
                     <ChevronLeft className="w-4 h-4" />
                   </button>
+                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                    const pageNum = i + 1;
+                    return (
+                      <button key={pageNum} onClick={() => setPage(pageNum)}
+                        className={cn('pagination-btn', page === pageNum && 'active')}>
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  {totalPages > 5 && <span className="pagination-btn cursor-default">…</span>}
                   <button disabled={page >= totalPages} onClick={() => setPage(page + 1)}
-                    className="btn-secondary py-1 px-2 disabled:opacity-40">
+                    className="pagination-btn" aria-label="Next page">
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>

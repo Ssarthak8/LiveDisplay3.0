@@ -10,12 +10,13 @@ const api = axios.create({
   },
 });
 
-// Request interceptor — attach JWT
+// Request interceptor — attach JWT and timezone
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().token;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  config.headers['x-timezone'] = Intl.DateTimeFormat().resolvedOptions().timeZone;
   return config;
 });
 

@@ -79,7 +79,7 @@ export class ScheduleService {
     });
 
     // Log audit
-    await AuditService.log('CREATE', userId, schedule._id.toString(), {
+    await AuditService.log('SCHEDULE_CREATED', userId, 'schedule', schedule._id.toString(), {
       title: data.title,
       room: data.roomId,
       date: data.date,
@@ -132,7 +132,7 @@ export class ScheduleService {
     );
 
     // Log audit
-    await AuditService.log('UPDATE', userId, id, {
+    await AuditService.log('SCHEDULE_UPDATED', userId, 'schedule', id, {
       changes: data,
     });
 
@@ -149,7 +149,7 @@ export class ScheduleService {
     await Schedule.findByIdAndDelete(id);
 
     // Log audit
-    await AuditService.log('DELETE', userId, id, {
+    await AuditService.log('SCHEDULE_DELETED', userId, 'schedule', id, {
       title: schedule.title,
       date: schedule.date,
     });
@@ -160,7 +160,7 @@ export class ScheduleService {
   /**
    * Get a single schedule by ID, fully populated.
    */
-  static async getById(id: string, userContext?: { userId: string; role: string }): Promise<any> {
+  static async getById(id: string, userContext?: { userId: string; role: string }, timezone?: string): Promise<any> {
     const schedule = await Schedule.findById(id)
       .populate('roomId', 'roomNumber building capacity')
       .populate('createdBy', 'name email phone department')
@@ -171,7 +171,7 @@ export class ScheduleService {
 
     const enriched = {
       ...schedule,
-      status: getScheduleStatus(schedule.date, schedule.startTime, schedule.endTime),
+      status: getScheduleStatus(schedule.date, schedule.startTime, schedule.endTime, timezone),
     };
 
     // Apply Privacy Strip for viewers and unauthenticated
@@ -185,7 +185,7 @@ export class ScheduleService {
   /**
    * Get paginated and filtered schedules.
    */
-  static async getAll(filters: ScheduleFilters = {}, userContext?: { userId: string; role: string }): Promise<any> {
+  static async getAll(filters: ScheduleFilters = {}, userContext?: { userId: string; role: string }, timezone?: string): Promise<any> {
     const query: Record<string, unknown> = {};
     const { search, roomId, type, status, date, startDate, endDate, page = 1, limit = 20 } = filters;
 
@@ -225,7 +225,7 @@ export class ScheduleService {
     // Compute status for each schedule
     let enriched = schedules.map((s) => ({
       ...s,
-      status: getScheduleStatus(s.date, s.startTime, s.endTime),
+      status: getScheduleStatus(s.date, s.startTime, s.endTime, timezone),
     }));
 
     // Filter by status in-memory (since it's computed)
@@ -250,8 +250,8 @@ export class ScheduleService {
   /**
    * Get today's schedules.
    */
-  static async getToday(userContext?: { userId: string; role: string }): Promise<any> {
-    const today = getTodayDate();
+  static async getToday(userContext?: { userId: string; role: string }, timezone?: string): Promise<any> {
+    const today = getTodayDate(timezone);
     const query: Record<string, any> = { date: today };
 
     // Apply Viewer Visibility Filter
@@ -266,7 +266,7 @@ export class ScheduleService {
 
     let enriched = schedules.map((s) => ({
       ...s,
-      status: getScheduleStatus(s.date, s.startTime, s.endTime),
+      status: getScheduleStatus(s.date, s.startTime, s.endTime, timezone),
     }));
 
     // Apply Privacy Strip for viewers and unauthenticated
@@ -280,7 +280,7 @@ export class ScheduleService {
   /**
    * Get room availability for a specific date.
    */
-  static async getRoomSchedules(roomId: string, date?: string, userContext?: { userId: string; role: string }): Promise<any> {
+  static async getRoomSchedules(roomId: string, date?: string, userContext?: { userId: string; role: string }, timezone?: string): Promise<any> {
     const query: Record<string, unknown> = { roomId };
     if (date) query.date = date;
 
@@ -295,7 +295,7 @@ export class ScheduleService {
 
     let enriched = schedules.map((s) => ({
       ...s,
-      status: getScheduleStatus(s.date, s.startTime, s.endTime),
+      status: getScheduleStatus(s.date, s.startTime, s.endTime, timezone),
     }));
 
     // Apply Privacy Strip for viewers and unauthenticated
@@ -309,8 +309,8 @@ export class ScheduleService {
   /**
    * Get dashboard stats.
    */
-  static async getStats() {
-    const today = getTodayDate();
+  static async getStats(timezone?: string) {
+    const today = getTodayDate(timezone);
     const now = new Date();
 
     const [totalRooms, todaySchedules] = await Promise.all([
@@ -322,7 +322,7 @@ export class ScheduleService {
     let upcomingEvents = 0;
 
     for (const s of todaySchedules) {
-      const status = getScheduleStatus(s.date, s.startTime, s.endTime);
+      const status = getScheduleStatus(s.date, s.startTime, s.endTime, timezone);
       if (status === 'ongoing') ongoingEvents++;
       if (status === 'upcoming') upcomingEvents++;
     }
@@ -330,8 +330,11 @@ export class ScheduleService {
     return {
       totalRooms,
       totalSchedulesToday: todaySchedules.length,
+      todayTotal: todaySchedules.length,
       ongoingEvents,
+      ongoing: ongoingEvents,
       upcomingEvents,
+      upcoming: upcomingEvents,
     };
   }
 }

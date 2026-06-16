@@ -28,10 +28,10 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-// POST /api/rooms — Admin only
-router.post('/', authenticate, authorize('superadmin', 'admin'), validate(CreateRoomSchema), async (req: Request, res: Response, next: NextFunction) => {
+// POST /api/rooms — Super Admin only
+router.post('/', authenticate, authorize('superadmin'), validate(CreateRoomSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const room = await RoomService.create(req.body);
+    const room = await RoomService.create(req.body, req.user!.userId);
     getIO().emit('room:created', room as any);
     res.status(201).json({ success: true, data: room });
   } catch (error) {
@@ -39,10 +39,10 @@ router.post('/', authenticate, authorize('superadmin', 'admin'), validate(Create
   }
 });
 
-// PUT /api/rooms/:id — Admin only
-router.put('/:id', authenticate, authorize('superadmin', 'admin'), validate(UpdateRoomSchema), async (req: Request, res: Response, next: NextFunction) => {
+// PUT /api/rooms/:id — Super Admin only
+router.put('/:id', authenticate, authorize('superadmin'), validate(UpdateRoomSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const room = await RoomService.update(req.params.id as string, req.body);
+    const room = await RoomService.update(req.params.id as string, req.body, req.user!.userId);
     getIO().emit('room:updated', room as any);
     res.json({ success: true, data: room });
   } catch (error) {
@@ -50,10 +50,10 @@ router.put('/:id', authenticate, authorize('superadmin', 'admin'), validate(Upda
   }
 });
 
-// DELETE /api/rooms/:id — Admin only
-router.delete('/:id', authenticate, authorize('superadmin', 'admin'), async (req: Request, res: Response, next: NextFunction) => {
+// DELETE /api/rooms/:id — Super Admin only
+router.delete('/:id', authenticate, authorize('superadmin'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    await RoomService.delete(req.params.id as string);
+    await RoomService.delete(req.params.id as string, req.user!.userId);
     getIO().emit('room:deleted', { id: req.params.id as string });
     res.json({ success: true, message: 'Room deleted successfully' });
   } catch (error) {

@@ -62,8 +62,11 @@ export interface LoginResponse {
 export interface DashboardStats {
   totalRooms: number;
   totalSchedulesToday: number;
+  todayTotal: number;
   ongoingEvents: number;
+  ongoing: number;
   upcomingEvents: number;
+  upcoming: number;
 }
 
 export interface ScheduleFilters {

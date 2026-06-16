@@ -1,36 +1,63 @@
 import { AuditLog } from '../models/AuditLog.js';
+import { User } from '../models/User.js';
 
 export class AuditService {
   /**
-   * Create an audit log entry.
+   * Create an audit log entry with denormalized user information.
    */
   static async log(
-    action: 'CREATE' | 'UPDATE' | 'DELETE',
+    action: string,
     performedBy: string,
-    scheduleId: string | null,
+    resourceType: 'schedule' | 'room' | 'user' | 'display-content' | 'display-media',
+    resourceId: string | null,
     details?: Record<string, unknown>
   ) {
+    // Lookup user for denormalization
+    let performedByName = '';
+    let performedByEmail = '';
+    let performedByRole = '';
+    try {
+      const user = await User.findById(performedBy).select('name email role').lean();
+      if (user) {
+        performedByName = user.name;
+        performedByEmail = user.email;
+        performedByRole = user.role;
+      }
+    } catch {
+      // Proceed even if user lookup fails
+    }
+
     return AuditLog.create({
       action,
       performedBy,
-      scheduleId,
+      performedByName,
+      performedByEmail,
+      performedByRole,
+      resourceType,
+      resourceId,
+      // Also store in legacy scheduleId field for backward compat
+      scheduleId: resourceType === 'schedule' ? resourceId : null,
       details: details || {},
       timestamp: new Date(),
     });
   }
 
   /**
-   * Get paginated audit logs.
+   * Get paginated audit logs with filtering.
    */
   static async getLogs(
     page: number = 1,
     limit: number = 20,
-    filters?: { action?: string; startDate?: string; endDate?: string }
+    filters?: { action?: string; startDate?: string; endDate?: string; resourceType?: string }
   ) {
     const query: Record<string, unknown> = {};
 
     if (filters?.action) {
       query.action = filters.action;
+    }
+
+    if (filters?.resourceType) {
+      query.resourceType = filters.resourceType;
     }
 
     if (filters?.startDate || filters?.endDate) {
@@ -45,8 +72,7 @@ export class AuditService {
 
     const total = await AuditLog.countDocuments(query);
     const logs = await AuditLog.find(query)
-      .populate('performedBy', 'name email')
-      .populate('scheduleId', 'title')
+      .populate('performedBy', 'name email role')
       .sort({ timestamp: -1 })
       .skip((page - 1) * limit)
       .limit(limit)

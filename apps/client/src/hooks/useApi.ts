@@ -209,3 +209,164 @@ export function useResetPassword() {
     },
   });
 }
+
+// ── Display Content Hooks ──
+
+export function useDisplayContent() {
+  return useQuery({
+    queryKey: ['display-content'],
+    queryFn: async () => {
+      const { data } = await api.get('/display-content');
+      return data.data;
+    },
+  });
+}
+
+export function useActiveDisplayContent() {
+  return useQuery({
+    queryKey: ['display-content-active'],
+    queryFn: async () => {
+      const { data } = await api.get('/display-content/active');
+      return data.data;
+    },
+    refetchInterval: 60000, // Refresh every minute
+  });
+}
+
+export function useUploadDisplayContent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (formData: FormData) => {
+      const { data } = await api.post('/display-content/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['display-content'] });
+      queryClient.invalidateQueries({ queryKey: ['display-content-active'] });
+    },
+  });
+}
+
+export function useUpdateDisplayContent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...data }: { id: string; [key: string]: unknown }) => {
+      const { data: result } = await api.put(`/display-content/${id}`, data);
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['display-content'] });
+      queryClient.invalidateQueries({ queryKey: ['display-content-active'] });
+    },
+  });
+}
+
+export function useDeleteDisplayContent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.delete(`/display-content/${id}`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['display-content'] });
+      queryClient.invalidateQueries({ queryKey: ['display-content-active'] });
+    },
+  });
+}
+
+export function useReorderDisplayContent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (orderedIds: string[]) => {
+      const { data } = await api.put('/display-content/reorder/batch', { orderedIds });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['display-content'] });
+    },
+  });
+}
+
+// ── Display Media Hooks ──
+
+export function useDisplayMedia() {
+  return useQuery({
+    queryKey: ['display-media'],
+    queryFn: async () => {
+      const { data } = await api.get('/display-media');
+      return data.data;
+    },
+  });
+}
+
+export function useActiveDisplayMedia() {
+  return useQuery({
+    queryKey: ['display-media-active'],
+    queryFn: async () => {
+      const { data } = await api.get('/display-media?active=true');
+      return data.data;
+    },
+    refetchInterval: 30000, // Refresh every 30 seconds for live updates
+  });
+}
+
+export function useUploadDisplayMedia() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (formData: FormData) => {
+      const { data } = await api.post('/display-media', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['display-media'] });
+      queryClient.invalidateQueries({ queryKey: ['display-media-active'] });
+    },
+  });
+}
+
+export function useUpdateDisplayMedia() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...data }: { id: string; [key: string]: unknown }) => {
+      const { data: result } = await api.put(`/display-media/${id}`, data);
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['display-media'] });
+      queryClient.invalidateQueries({ queryKey: ['display-media-active'] });
+    },
+  });
+}
+
+export function useDeleteDisplayMedia() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.delete(`/display-media/${id}`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['display-media'] });
+      queryClient.invalidateQueries({ queryKey: ['display-media-active'] });
+    },
+  });
+}
+
+export function useReorderDisplayMedia() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (orderedIds: string[]) => {
+      const { data } = await api.put('/display-media/reorder', { orderedIds });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['display-media'] });
+      queryClient.invalidateQueries({ queryKey: ['display-media-active'] });
+    },
+  });
+}

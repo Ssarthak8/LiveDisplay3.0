@@ -22,7 +22,8 @@ router.get('/', optionalAuthenticate, async (req: Request, res: Response, next: 
       page: req.query.page ? Number(req.query.page) : 1,
       limit: req.query.limit ? Number(req.query.limit) : 20,
     };
-    const result = await ScheduleService.getAll(filters, req.user);
+    const timezone = req.headers['x-timezone'] as string | undefined;
+    const result = await ScheduleService.getAll(filters, req.user, timezone);
     res.json({ success: true, ...result });
   } catch (error) {
     next(error);
@@ -32,7 +33,8 @@ router.get('/', optionalAuthenticate, async (req: Request, res: Response, next: 
 // GET /api/schedules/today — Public (filtered by optional user session)
 router.get('/today', optionalAuthenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const schedules = await ScheduleService.getToday(req.user);
+    const timezone = req.headers['x-timezone'] as string | undefined;
+    const schedules = await ScheduleService.getToday(req.user, timezone);
     res.json({ success: true, data: schedules });
   } catch (error) {
     next(error);
@@ -40,9 +42,10 @@ router.get('/today', optionalAuthenticate, async (req: Request, res: Response, n
 });
 
 // GET /api/schedules/stats — Admin only
-router.get('/stats', authenticate, authorize('superadmin', 'admin'), async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/stats', authenticate, authorize('superadmin', 'admin'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const stats = await ScheduleService.getStats();
+    const timezone = req.headers['x-timezone'] as string | undefined;
+    const stats = await ScheduleService.getStats(timezone);
     res.json({ success: true, data: stats });
   } catch (error) {
     next(error);
@@ -53,7 +56,8 @@ router.get('/stats', authenticate, authorize('superadmin', 'admin'), async (_req
 router.get('/room/:roomId', optionalAuthenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const date = req.query.date as string | undefined;
-    const schedules = await ScheduleService.getRoomSchedules(req.params.roomId as string, date, req.user);
+    const timezone = req.headers['x-timezone'] as string | undefined;
+    const schedules = await ScheduleService.getRoomSchedules(req.params.roomId as string, date, req.user, timezone);
     res.json({ success: true, data: schedules });
   } catch (error) {
     next(error);
@@ -63,7 +67,8 @@ router.get('/room/:roomId', optionalAuthenticate, async (req: Request, res: Resp
 // GET /api/schedules/:id — Public (filtered by optional user session)
 router.get('/:id', optionalAuthenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const schedule = await ScheduleService.getById(req.params.id as string, req.user);
+    const timezone = req.headers['x-timezone'] as string | undefined;
+    const schedule = await ScheduleService.getById(req.params.id as string, req.user, timezone);
     res.json({ success: true, data: schedule });
   } catch (error) {
     next(error);
@@ -81,8 +86,8 @@ router.post('/', authenticate, authorize('superadmin', 'admin'), validate(Create
   }
 });
 
-// PUT /api/schedules/:id — Admin and Super Admin only
-router.put('/:id', authenticate, authorize('superadmin', 'admin'), validate(UpdateScheduleSchema), async (req: Request, res: Response, next: NextFunction) => {
+// PUT /api/schedules/:id — Super Admin only
+router.put('/:id', authenticate, authorize('superadmin'), validate(UpdateScheduleSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const schedule = await ScheduleService.update(req.params.id as string, req.body, req.user!.userId);
     getIO().emit('schedule:updated', schedule as any);
@@ -92,8 +97,8 @@ router.put('/:id', authenticate, authorize('superadmin', 'admin'), validate(Upda
   }
 });
 
-// DELETE /api/schedules/:id — Admin and Super Admin only
-router.delete('/:id', authenticate, authorize('superadmin', 'admin'), async (req: Request, res: Response, next: NextFunction) => {
+// DELETE /api/schedules/:id — Super Admin only
+router.delete('/:id', authenticate, authorize('superadmin'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const result = await ScheduleService.delete(req.params.id as string, req.user!.userId);
     getIO().emit('schedule:deleted', { id: req.params.id as string });

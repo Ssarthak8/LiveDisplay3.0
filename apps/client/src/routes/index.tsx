@@ -13,11 +13,12 @@ import Schedules from '@/pages/admin/Schedules';
 import Rooms from '@/pages/admin/Rooms';
 import AuditLogs from '@/pages/admin/AuditLogs';
 import Users from '@/pages/admin/Users';
+import DisplayMedia from '@/pages/admin/DisplayMedia';
 import ChangePassword from '@/pages/admin/ChangePassword';
 
 // Viewer Pages
 import ViewerHome from '@/pages/viewer/ViewerHome';
-import ViewerDashboard from '@/pages/viewer/Dashboard';
+import ViewerDashboard from '@/pages/viewer/ViewerDashboard';
 import ViewerLogin from '@/pages/viewer/Login';
 
 // TV Display
@@ -137,6 +138,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requireRole="superadmin">
             <Users />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'display-media',
+        element: (
+          <ProtectedRoute requireRole={['superadmin', 'admin']}>
+            <DisplayMedia />
           </ProtectedRoute>
         ),
       },

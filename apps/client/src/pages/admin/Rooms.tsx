@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuthStore } from '@/stores/authStore';
 import { useRooms, useCreateRoom, useUpdateRoom, useDeleteRoom } from '@/hooks/useApi';
 import { useSocketEvents } from '@/hooks/useSocketEvents';
 import { useTodaySchedules } from '@/hooks/useApi';
@@ -22,6 +23,8 @@ function FormSection({ title }: { title: string }) {
 
 export default function Rooms() {
   useSocketEvents();
+  const { user } = useAuthStore();
+  const isSuperAdmin = user?.role === 'superadmin';
 
   const { data: rooms, isLoading }  = useRooms();
   const { data: todayData }         = useTodaySchedules();
@@ -118,9 +121,11 @@ export default function Rooms() {
           <h1 className="text-xl font-bold text-surface-900 dark:text-white">Room Management</h1>
           <p className="text-sm text-surface-500 mt-0.5">Manage meeting rooms and spaces</p>
         </div>
-        <button onClick={openCreate} className="btn-primary shrink-0">
-          <Plus className="w-4 h-4" /> Add Room
-        </button>
+        {isSuperAdmin && (
+          <button onClick={openCreate} className="btn-primary shrink-0">
+            <Plus className="w-4 h-4" /> Add Room
+          </button>
+        )}
       </div>
 
       {/* ── Summary chips ── */}
@@ -155,7 +160,7 @@ export default function Rooms() {
           <p className="text-sm font-medium text-surface-500">No rooms registered yet</p>
           <p className="text-xs text-surface-400 mt-1">Add your first room to get started</p>
           <button onClick={openCreate} className="btn-primary mt-5 mx-auto">
-            <Plus className="w-4 h-4" /> Add Room
+              <Plus className="w-4 h-4" /> Add Room
           </button>
         </div>
       ) : (
@@ -175,18 +180,20 @@ export default function Rooms() {
                     <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                       <DoorOpen className="w-5 h-5 text-primary-700 dark:text-primary-400" />
                     </div>
+                    {isSuperAdmin && (
                     <div className="flex gap-1">
                       <button onClick={() => openEdit(room)}
                         className="p-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20 text-surface-400 hover:text-primary-700 dark:hover:text-primary-400 transition-colors"
-                        title="Edit room">
+                        title="Edit room" aria-label="Edit room">
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button onClick={() => setShowDeleteConfirm(room._id)}
                         className="p-1.5 rounded-md hover:bg-danger-50 dark:hover:bg-danger-900/20 text-surface-400 hover:text-danger-600 dark:hover:text-danger-400 transition-colors"
-                        title="Delete room">
+                        title="Delete room" aria-label="Delete room">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
+                    )}
                   </div>
 
                   {/* Room info */}

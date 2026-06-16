@@ -16,6 +16,7 @@ import {
   ExternalLink,
   Building2,
   Users,
+  MonitorPlay,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -115,6 +116,19 @@ export default function AdminLayout() {
             >
               <Users className="w-4 h-4 shrink-0" />
               Users
+            </NavLink>
+          )}
+
+          {(user?.role === 'superadmin' || user?.role === 'admin') && (
+            <NavLink
+              to="/admin/display-media"
+              onClick={() => setSidebarOpen(false)}
+              className={({ isActive }) =>
+                cn('nav-item', isActive && 'active')
+              }
+            >
+              <MonitorPlay className="w-4 h-4 shrink-0" />
+              Display Media
             </NavLink>
           )}
 

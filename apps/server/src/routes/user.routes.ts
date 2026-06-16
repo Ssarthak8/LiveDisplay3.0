@@ -4,6 +4,7 @@ import { authenticate, authorize } from '../middleware/auth.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
 import { CreateUserSchema, UpdateUserSchema } from '@room-scheduler/shared-types';
 import { AppError } from '../services/auth.service.js';
+import { AuditService } from '../services/audit.service.js';
 import type { Request, Response, NextFunction } from 'express';
 
 const router = Router();
@@ -61,6 +62,14 @@ router.post('/', authenticate, authorize('superadmin'), validate(CreateUserSchem
       passwordHash: password,
       mustChangePassword: true, // Default forced update on first login
     });
+
+    // Audit log
+    await AuditService.log('USER_CREATED', req.user!.userId, 'user', user._id.toString(), {
+      name: userData.name,
+      email: userData.email,
+      role: userData.role,
+    });
+
     res.status(201).json({ success: true, data: user.toJSON() });
   } catch (error) {
     next(error);
@@ -84,6 +93,10 @@ router.put('/:id', authenticate, authorize('superadmin'), validate(UpdateUserSch
       }
     }
 
+    // Track if user is being disabled
+    const wasActive = user.isActive;
+    const isBeingDisabled = userData.isActive === false && wasActive;
+
     // Assign fields
     Object.assign(user, userData);
 
@@ -93,6 +106,19 @@ router.put('/:id', authenticate, authorize('superadmin'), validate(UpdateUserSch
     }
 
     await user.save();
+
+    // Audit log
+    if (isBeingDisabled) {
+      await AuditService.log('USER_DISABLED', req.user!.userId, 'user', req.params.id as string, {
+        name: user.name,
+        email: user.email,
+      });
+    } else {
+      await AuditService.log('USER_UPDATED', req.user!.userId, 'user', req.params.id as string, {
+        changes: Object.keys(userData),
+      });
+    }
+
     res.json({ success: true, data: user.toJSON() });
   } catch (error) {
     next(error);
@@ -112,6 +138,12 @@ router.post('/:id/reset-password', authenticate, authorize('superadmin'), async 
     user.passwordHash = tempPassword; // hashed automatically by pre-save
     user.mustChangePassword = true;
     await user.save();
+
+    // Audit log
+    await AuditService.log('PASSWORD_RESET', req.user!.userId, 'user', req.params.id as string, {
+      name: user.name,
+      email: user.email,
+    });
 
     res.json({
       success: true,
