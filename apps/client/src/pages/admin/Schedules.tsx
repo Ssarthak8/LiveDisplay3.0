@@ -21,10 +21,14 @@ type SortDir   = 'asc' | 'desc';
 
 interface ConflictData {
   roomNumber?: string;
+  building?: string;
   title?: string;
   startTime?: string;
   endTime?: string;
   date?: string;
+  faculty?: string;
+  roomCoordinator?: string;
+  coordinatorMobileNumber?: string;
   createdBy?: {
     name?: string;
     email?: string;
@@ -37,6 +41,7 @@ interface FormState {
   title: string; type: string; faculty: string;
   roomId: string; date: string; startTime: string;
   endTime: string; description: string;
+  roomCoordinator: string; coordinatorMobileNumber: string;
 }
 
 /* ── Sort icon helper ── */
@@ -97,6 +102,7 @@ export default function Schedules() {
   const [form, setForm] = useState<FormState>({
     title: '', type: 'Lecture', faculty: '', roomId: '',
     date: '', startTime: '', endTime: '', description: '',
+    roomCoordinator: '', coordinatorMobileNumber: '',
   });
 
   /* ── API ── */
@@ -144,7 +150,10 @@ export default function Schedules() {
 
   /* ── Form helpers ── */
   const resetForm = () => {
-    setForm({ title: '', type: 'Lecture', faculty: '', roomId: '', date: '', startTime: '', endTime: '', description: '' });
+    setForm({
+      title: '', type: 'Lecture', faculty: '', roomId: '', date: '', startTime: '', endTime: '', description: '',
+      roomCoordinator: '', coordinatorMobileNumber: '',
+    });
     setEditingSchedule(null);
     setConflictData(null);
     setFormErrors({});
@@ -163,6 +172,8 @@ export default function Schedules() {
       startTime:  schedule.startTime,
       endTime:    schedule.endTime,
       description:schedule.description || '',
+      roomCoordinator: schedule.roomCoordinator || '',
+      coordinatorMobileNumber: schedule.coordinatorMobileNumber || '',
     });
     setConflictData(null);
     setFormErrors({});
@@ -179,6 +190,12 @@ export default function Schedules() {
     if (!form.endTime)         errors.endTime  = 'End time is required';
     if (form.startTime && form.endTime && form.startTime >= form.endTime)
       errors.endTime = 'End time must be after start time';
+    if (!form.roomCoordinator.trim()) errors.roomCoordinator = 'Room Coordinator is required';
+    if (!form.coordinatorMobileNumber.trim()) {
+      errors.coordinatorMobileNumber = 'Mobile Number is required';
+    } else if (!/^\d{10}$/.test(form.coordinatorMobileNumber)) {
+      errors.coordinatorMobileNumber = 'Mobile Number must be a 10-digit number';
+    }
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -326,17 +343,18 @@ export default function Schedules() {
                     <Th field="room">Room</Th>
                     <Th field="date">Date &amp; Time</Th>
                     <Th field="status">Status</Th>
+                    <th className="text-left px-5 py-3 font-semibold text-surface-500 text-xs uppercase tracking-wider">Room Coordinator</th>
                     <th className="text-left px-5 py-3 font-semibold text-surface-500 text-xs uppercase tracking-wider">Created By</th>
                     {isSuperAdmin && <th className="text-right px-5 py-3 font-semibold text-surface-500 text-xs uppercase tracking-wider">Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {isLoading ? (
-                    <tr><td colSpan={7} className="text-center py-12">
+                    <tr><td colSpan={8} className="text-center py-12">
                       <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary-600" />
                     </td></tr>
                   ) : sortedSchedules.length === 0 ? (
-                    <tr><td colSpan={isSuperAdmin ? 7 : 6} className="text-center py-12">
+                    <tr><td colSpan={isSuperAdmin ? 8 : 7} className="text-center py-12">
                       <div className="empty-state">
                         <Calendar className="empty-state-icon" />
                         <p className="empty-state-title">No schedules found</p>
@@ -375,6 +393,10 @@ export default function Schedules() {
                             {s.status === 'ongoing' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
                             {s.status?.charAt(0).toUpperCase() + s.status?.slice(1)}
                           </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <p className="text-sm font-medium text-surface-900 dark:text-white">{s.roomCoordinator || '—'}</p>
+                          <p className="text-xs text-surface-500">{s.coordinatorMobileNumber || ''}</p>
                         </td>
                         <td className="px-5 py-4">
                           <p className="text-sm text-surface-700 dark:text-surface-300">{s.createdBy?.name || '—'}</p>
@@ -490,21 +512,16 @@ export default function Schedules() {
                       Scheduling Conflict Detected
                     </p>
                     <div className="space-y-1.5">
-                      <ConflictRow label="Event"       value={conflictData.title} />
-                      <ConflictRow label="Room"        value={conflictData.roomNumber} />
-                      <ConflictRow label="Date"        value={conflictData.date ? formatDate(conflictData.date) : undefined} />
-                      <ConflictRow label="Time Slot"
+                      <ConflictRow label="Faculty"          value={conflictData.faculty} />
+                      <ConflictRow label="Room Coordinator" value={conflictData.roomCoordinator} />
+                      <ConflictRow label="Mobile Number"    value={conflictData.coordinatorMobileNumber} />
+                      <ConflictRow label="Room"             value={conflictData.roomNumber ? `${conflictData.roomNumber}${conflictData.building ? ` (${conflictData.building})` : ''}` : undefined} />
+                      <ConflictRow label="Date"             value={conflictData.date ? formatDate(conflictData.date) : undefined} />
+                      <ConflictRow label="Time"
                         value={conflictData.startTime && conflictData.endTime
                           ? `${formatTime(conflictData.startTime)} – ${formatTime(conflictData.endTime)}`
                           : undefined}
                       />
-                      <div className="pt-1 mt-1 border-t border-amber-200 dark:border-amber-800/50">
-                        <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-1">Scheduled By</p>
-                        <ConflictRow label="Name"       value={conflictData.createdBy?.name} />
-                        <ConflictRow label="Email"      value={conflictData.createdBy?.email} />
-                        <ConflictRow label="Phone"      value={conflictData.createdBy?.phone} />
-                        <ConflictRow label="Department" value={conflictData.createdBy?.department} />
-                      </div>
                     </div>
                     <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
                       Please choose a different room or time slot.
@@ -607,7 +624,32 @@ export default function Schedules() {
                 </div>
               </div>
 
-              {/* Section 4 — Notes */}
+              {/* Section 4 — Room Coordinator Details */}
+              <div className="space-y-4">
+                <FormSection title="Room Coordinator Details" />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-surface-700 dark:text-surface-300 mb-1.5">
+                      Room Coordinator <span className="text-danger-500">*</span>
+                    </label>
+                    <input type="text" required value={form.roomCoordinator}
+                      onChange={(e) => setForm({ ...form, roomCoordinator: e.target.value })}
+                      className={inputClass('roomCoordinator')} placeholder="Coordinator name" />
+                    {formErrors.roomCoordinator && <p className="mt-1 text-xs text-danger-600">{formErrors.roomCoordinator}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-surface-700 dark:text-surface-300 mb-1.5">
+                      Mobile Number <span className="text-danger-500">*</span>
+                    </label>
+                    <input type="text" required value={form.coordinatorMobileNumber}
+                      onChange={(e) => setForm({ ...form, coordinatorMobileNumber: e.target.value })}
+                      className={inputClass('coordinatorMobileNumber')} placeholder="10-digit number" />
+                    {formErrors.coordinatorMobileNumber && <p className="mt-1 text-xs text-danger-600">{formErrors.coordinatorMobileNumber}</p>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 5 — Notes */}
               <div className="space-y-4">
                 <FormSection title="Additional Notes" />
                 <div>

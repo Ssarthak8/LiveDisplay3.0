@@ -10,6 +10,8 @@ export interface ISchedule extends Document {
   startTime: string; // HH:MM
   endTime: string; // HH:MM
   description: string;
+  roomCoordinator: string;
+  coordinatorMobileNumber: string;
   assignedUsers: mongoose.Types.ObjectId[];
   assignedDepartment: string | null;
   assignedGroups: string[];
@@ -56,6 +58,16 @@ const scheduleSchema = new Schema<ISchedule>(
     description: {
       type: String,
       default: '',
+    },
+    roomCoordinator: {
+      type: String,
+      required: [true, 'Room Coordinator is required'],
+      trim: true,
+    },
+    coordinatorMobileNumber: {
+      type: String,
+      required: [true, 'Mobile Number is required'],
+      trim: true,
     },
     assignedUsers: [
       {

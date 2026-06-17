@@ -21,6 +21,8 @@ export class ScheduleService {
     delete cleaned.assignedUsers;
     delete cleaned.assignedDepartment;
     delete cleaned.assignedGroups;
+    delete cleaned.roomCoordinator;
+    delete cleaned.coordinatorMobileNumber;
     return cleaned;
   }
 
@@ -59,6 +61,8 @@ export class ScheduleService {
       date: string;
       startTime: string;
       endTime: string;
+      roomCoordinator: string;
+      coordinatorMobileNumber: string;
       description?: string;
       assignedUsers?: string[];
       assignedDepartment?: string | null;
@@ -103,6 +107,8 @@ export class ScheduleService {
       date: string;
       startTime: string;
       endTime: string;
+      roomCoordinator: string;
+      coordinatorMobileNumber: string;
       description: string;
       assignedUsers: string[];
       assignedDepartment: string | null;

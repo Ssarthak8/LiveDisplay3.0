@@ -7,56 +7,56 @@ export async function seedData() {
   console.log('🌱 Seeding database...\n');
 
   // Seed users only in development mode
-  let admin = await User.findOne({ email: 'admin@scheduler.com' });
-  let superadmin = await User.findOne({ email: 'superadmin@scheduler.com' });
-  let viewer = await User.findOne({ email: 'viewer@scheduler.com' });
+  let admin = null;
+  let superadmin = null;
+  let viewer = null;
 
   if (process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) {
-    if (!superadmin) {
-      superadmin = await User.create({
-        name: 'Super Admin',
-        email: 'superadmin@scheduler.com',
-        phone: '+1-555-000-0000',
-        department: 'Administration',
-        role: 'superadmin',
-        passwordHash: 'SuperAdmin@123',
-        mustChangePassword: false,
-      });
-      console.log('✅ Super Admin created: superadmin@scheduler.com / SuperAdmin@123');
-    } else {
-      console.log('⏩ Super Admin user already exists');
-    }
+    // Delete existing default users to ensure static IDs are applied
+    await User.deleteMany({
+      email: { $in: ['superadmin@scheduler.com', 'admin@scheduler.com', 'viewer@scheduler.com'] }
+    });
 
-    if (!admin) {
-      admin = await User.create({
-        name: 'Admin User',
-        email: 'admin@scheduler.com',
-        phone: '+1-555-000-0001',
-        department: 'Administration',
-        role: 'admin',
-        passwordHash: 'Admin@123',
-        mustChangePassword: false,
-      });
-      console.log('✅ Admin user created: admin@scheduler.com / Admin@123');
-    } else {
-      console.log('⏩ Admin user already exists');
-    }
+    superadmin = await User.create({
+      _id: new mongoose.Types.ObjectId('65d648b2b24345e69e38e6ca'),
+      name: 'Super Admin',
+      email: 'superadmin@scheduler.com',
+      phone: '+1-555-000-0000',
+      department: 'Administration',
+      role: 'superadmin',
+      passwordHash: 'SuperAdmin@123',
+      mustChangePassword: false,
+    });
+    console.log('✅ Super Admin created: superadmin@scheduler.com / SuperAdmin@123');
 
-    if (!viewer) {
-      viewer = await User.create({
-        name: 'Viewer User',
-        email: 'viewer@scheduler.com',
-        phone: '+1-555-000-0003',
-        department: 'Computer Science',
-        role: 'viewer',
-        passwordHash: 'Viewer@123',
-        mustChangePassword: false,
-      });
-      console.log('✅ Viewer user created: viewer@scheduler.com / Viewer@123');
-    } else {
-      console.log('⏩ Viewer user already exists');
-    }
+    admin = await User.create({
+      _id: new mongoose.Types.ObjectId('65d648b2b24345e69e38e6cb'),
+      name: 'Admin User',
+      email: 'admin@scheduler.com',
+      phone: '+1-555-000-0001',
+      department: 'Administration',
+      role: 'admin',
+      passwordHash: 'Admin@123',
+      mustChangePassword: false,
+    });
+    console.log('✅ Admin user created: admin@scheduler.com / Admin@123');
+
+    viewer = await User.create({
+      _id: new mongoose.Types.ObjectId('65d648b2b24345e69e38e6cc'),
+      name: 'Viewer User',
+      email: 'viewer@scheduler.com',
+      phone: '+1-555-000-0003',
+      department: 'Computer Science',
+      role: 'viewer',
+      passwordHash: 'Viewer@123',
+      mustChangePassword: false,
+    });
+    console.log('✅ Viewer user created: viewer@scheduler.com / Viewer@123');
   } else {
+    // In production, just verify they exist or lookup if needed
+    admin = await User.findOne({ email: 'admin@scheduler.com' });
+    superadmin = await User.findOne({ email: 'superadmin@scheduler.com' });
+    viewer = await User.findOne({ email: 'viewer@scheduler.com' });
     console.log('⏩ Production environment detected. Skipping default user seeding.');
   }
 
@@ -109,6 +109,8 @@ export async function seedData() {
         startTime: '09:00',
         endTime: '10:30',
         description: 'CS101 introductory lecture covering algorithms and data structures fundamentals.',
+        roomCoordinator: 'Rohit',
+        coordinatorMobileNumber: '1234567890',
         createdBy: admin._id,
         assignedDepartment: 'Computer Science',
         assignedUsers: viewer ? [viewer._id] : [],
@@ -122,6 +124,8 @@ export async function seedData() {
         startTime: '11:00',
         endTime: '12:00',
         description: 'Monthly department meeting to discuss curriculum changes.',
+        roomCoordinator: 'Rohit',
+        coordinatorMobileNumber: '1234567890',
         createdBy: admin._id,
         assignedDepartment: null, // Public
         assignedUsers: [],
@@ -135,6 +139,8 @@ export async function seedData() {
         startTime: '14:00',
         endTime: '16:00',
         description: 'Hands-on workshop on neural networks and deep learning.',
+        roomCoordinator: 'Rohit',
+        coordinatorMobileNumber: '1234567890',
         createdBy: admin._id,
         assignedDepartment: 'Computer Science',
         assignedUsers: [],
@@ -148,6 +154,8 @@ export async function seedData() {
         startTime: '10:00',
         endTime: '11:30',
         description: 'Guest lecture on quantum computing advances.',
+        roomCoordinator: 'Rohit',
+        coordinatorMobileNumber: '1234567890',
         createdBy: admin._id,
         assignedDepartment: null, // Public
         assignedUsers: [],
@@ -161,6 +169,8 @@ export async function seedData() {
         startTime: '13:00',
         endTime: '15:00',
         description: 'Practical lab session on trees and graphs.',
+        roomCoordinator: 'Rohit',
+        coordinatorMobileNumber: '1234567890',
         createdBy: admin._id,
         assignedDepartment: 'Information Technology', // Assigned to other department, hidden for viewer
         assignedUsers: [],

@@ -21,6 +21,8 @@ export const ScheduleSchema = z.object({
   startTime: z.string(),
   endTime: z.string(),
   description: z.string().optional().default(''),
+  roomCoordinator: z.string(),
+  coordinatorMobileNumber: z.string(),
   assignedUsers: z.array(z.union([z.string(), z.object({
     _id: z.string(),
     name: z.string(),
@@ -55,6 +57,8 @@ export const CreateScheduleSchema = z.object({
   startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Invalid time format (HH:MM)'),
   endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Invalid time format (HH:MM)'),
   description: z.string().optional().default(''),
+  roomCoordinator: z.string().min(1, 'Room Coordinator is required'),
+  coordinatorMobileNumber: z.string().regex(/^\d{10}$/, 'Mobile Number must be a 10-digit number'),
   assignedUsers: z.array(z.string()).optional(),
   assignedDepartment: z.string().nullable().optional(),
   assignedGroups: z.array(z.string()).optional(),
@@ -74,6 +78,8 @@ export const UpdateScheduleSchema = z.object({
   startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/).optional(),
   endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/).optional(),
   description: z.string().optional(),
+  roomCoordinator: z.string().min(1).optional(),
+  coordinatorMobileNumber: z.string().regex(/^\d{10}$/, 'Mobile Number must be a 10-digit number').optional(),
   assignedUsers: z.array(z.string()).optional(),
   assignedDepartment: z.string().nullable().optional(),
   assignedGroups: z.array(z.string()).optional(),
@@ -89,12 +95,9 @@ export const ConflictDetailSchema = z.object({
   endTime: z.string(),
   roomNumber: z.string(),
   building: z.string(),
-  createdBy: z.object({
-    name: z.string(),
-    email: z.string(),
-    phone: z.string(),
-    department: z.string(),
-  }),
+  faculty: z.string(),
+  roomCoordinator: z.string(),
+  coordinatorMobileNumber: z.string(),
 });
 
 export type ConflictDetail = z.infer<typeof ConflictDetailSchema>;

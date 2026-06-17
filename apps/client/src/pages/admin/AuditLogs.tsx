@@ -12,11 +12,37 @@ export default function AuditLogs() {
   const totalPages = data?.totalPages || 1;
 
   const actionBadge = (action: string) => {
+    if (action.includes('CREATE') || action.includes('CREATED')) {
+      return 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800';
+    }
+    if (action.includes('UPDATE') || action.includes('UPDATED') || action.includes('PASSWORD_RESET')) {
+      return 'bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800';
+    }
+    if (action.includes('DELETE') || action.includes('DELETED') || action.includes('DISABLED')) {
+      return 'bg-danger-50 text-danger-800 border-danger-200 dark:bg-danger-900/20 dark:text-danger-400 dark:border-danger-800';
+    }
+    return 'bg-surface-100 text-surface-700 border-surface-200 dark:bg-surface-700 dark:text-surface-300 dark:border-surface-600';
+  };
+
+  const formatActionLabel = (action: string) => {
     switch (action) {
-      case 'CREATE': return 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800';
-      case 'UPDATE': return 'bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800';
-      case 'DELETE': return 'bg-danger-50 text-danger-800 border-danger-200 dark:bg-danger-900/20 dark:text-danger-400 dark:border-danger-800';
-      default:       return 'bg-surface-100 text-surface-700 border-surface-200 dark:bg-surface-700 dark:text-surface-300 dark:border-surface-600';
+      case 'SCHEDULE_CREATED': return 'Schedule Created';
+      case 'SCHEDULE_UPDATED': return 'Schedule Updated';
+      case 'SCHEDULE_DELETED': return 'Schedule Deleted';
+      case 'ROOM_CREATED':     return 'Room Created';
+      case 'ROOM_UPDATED':     return 'Room Updated';
+      case 'ROOM_DELETED':     return 'Room Deleted';
+      case 'USER_CREATED':     return 'User Created';
+      case 'USER_UPDATED':     return 'User Updated';
+      case 'USER_DISABLED':    return 'User Disabled';
+      case 'PASSWORD_RESET':   return 'Password Reset';
+      case 'DISPLAY_CONTENT_CREATED': return 'Display Content Created';
+      case 'DISPLAY_CONTENT_UPDATED': return 'Display Content Updated';
+      case 'DISPLAY_CONTENT_DELETED': return 'Display Content Deleted';
+      case 'DISPLAY_MEDIA_CREATED': return 'Display Media Created';
+      case 'DISPLAY_MEDIA_UPDATED': return 'Display Media Updated';
+      case 'DISPLAY_MEDIA_DELETED': return 'Display Media Deleted';
+      default: return action;
     }
   };
 
@@ -58,13 +84,20 @@ export default function AuditLogs() {
             className="form-input w-auto"
           >
             <option value="">All Actions</option>
-            <option value="CREATE">Create</option>
-            <option value="UPDATE">Update</option>
-            <option value="DELETE">Delete</option>
+            <option value="SCHEDULE_CREATED">Schedule Created</option>
+            <option value="SCHEDULE_UPDATED">Schedule Updated</option>
+            <option value="SCHEDULE_DELETED">Schedule Deleted</option>
+            <option value="ROOM_CREATED">Room Created</option>
+            <option value="ROOM_UPDATED">Room Updated</option>
+            <option value="ROOM_DELETED">Room Deleted</option>
+            <option value="USER_CREATED">User Created</option>
+            <option value="USER_UPDATED">User Updated</option>
+            <option value="USER_DISABLED">User Disabled</option>
+            <option value="PASSWORD_RESET">Password Reset</option>
           </select>
           <p className="text-xs text-surface-400">
             {filterAction
-              ? `Showing ${filterAction} actions`
+              ? `Showing ${formatActionLabel(filterAction)} actions`
               : 'Showing all actions'}
           </p>
         </div>
@@ -100,21 +133,33 @@ export default function AuditLogs() {
                       {/* Action */}
                       <td className="px-5 py-4">
                         <span className={cn('badge border font-semibold', actionBadge(log.action))}>
-                          {log.action}
+                          {formatActionLabel(log.action)}
                         </span>
                       </td>
-                      {/* Schedule */}
+                      {/* Schedule / Event */}
                       <td className="px-5 py-4">
                         <p className="text-sm font-medium text-surface-900 dark:text-surface-100">
-                          {log.scheduleId?.title || <span className="text-surface-400 italic">Deleted schedule</span>}
+                          {log.resourceType === 'schedule' ? (
+                            log.scheduleId?.title || log.details?.title || 'Deleted schedule'
+                          ) : log.resourceType === 'room' ? (
+                            log.details?.roomNumber ? `${log.details.roomNumber} (${log.details.building || ''})` : `Room: ${log.resourceId}`
+                          ) : log.resourceType === 'user' ? (
+                            log.details?.email || `User: ${log.resourceId}`
+                          ) : log.resourceType === 'display-content' ? (
+                            log.details?.title || `Display Content: ${log.resourceId}`
+                          ) : log.resourceType === 'display-media' ? (
+                            log.details?.title || `Display Media: ${log.resourceId}`
+                          ) : (
+                            log.scheduleId?.title || log.resourceId || '—'
+                          )}
                         </p>
                       </td>
                       {/* Performed By */}
                       <td className="px-5 py-4">
                         <p className="text-sm font-medium text-surface-900 dark:text-surface-100">
-                          {log.performedBy?.name || 'System'}
+                          {log.performedBy?.name || log.performedByName || 'System'}
                         </p>
-                        <p className="text-xs text-surface-400 mt-0.5">{log.performedBy?.email || ''}</p>
+                        <p className="text-xs text-surface-400 mt-0.5">{log.performedBy?.email || log.performedByEmail || ''}</p>
                       </td>
                       {/* Timestamp */}
                       <td className="px-5 py-4">

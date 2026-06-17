@@ -304,13 +304,12 @@ export default function CalendarView({ schedules, rooms, onSelectSlot, isAdmin =
                               </p>
                             )}
                             
-                            {/* Creator Details (Admin only) */}
-                            {isAdmin && s.createdBy && (
+                            {/* Room Coordinator Details (Admin only) */}
+                            {isAdmin && s.roomCoordinator && (
                               <div className="mt-3 pt-2.5 border-t border-surface-150 dark:border-surface-800 space-y-1 text-[11px] bg-surface-50 dark:bg-surface-950 p-2 rounded-xl">
-                                <p className="font-semibold text-surface-700 dark:text-surface-300">Booked By:</p>
-                                <p className="truncate">👤 {s.createdBy.name} ({s.createdBy.department})</p>
-                                <p className="truncate">📧 {s.createdBy.email}</p>
-                                {s.createdBy.phone && <p>📞 {s.createdBy.phone}</p>}
+                                <p className="font-semibold text-surface-700 dark:text-surface-300">Room Coordinator:</p>
+                                <p className="truncate">👤 {s.roomCoordinator}</p>
+                                <p className="truncate">📞 {s.coordinatorMobileNumber}</p>
                               </div>
                             )}
                           </div>

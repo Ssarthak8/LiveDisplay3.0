@@ -25,6 +25,7 @@ const auditLogSchema = new Schema<IAuditLog>({
       'USER_CREATED', 'USER_UPDATED', 'USER_DISABLED', 'PASSWORD_RESET',
       'DISPLAY_CONTENT_CREATED', 'DISPLAY_CONTENT_UPDATED', 'DISPLAY_CONTENT_DELETED',
       'DISPLAY_MEDIA_CREATED', 'DISPLAY_MEDIA_UPDATED', 'DISPLAY_MEDIA_DELETED',
+      'ANALYTICS_VIEW', 'ANALYTICS_EXPORT',
     ],
     required: true,
   },
@@ -47,7 +48,7 @@ const auditLogSchema = new Schema<IAuditLog>({
   },
   resourceType: {
     type: String,
-    enum: ['schedule', 'room', 'user', 'display-content', 'display-media', null],
+    enum: ['schedule', 'room', 'user', 'display-content', 'display-media', 'analytics', null],
     default: null,
   },
   resourceId: {

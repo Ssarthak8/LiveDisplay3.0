@@ -8,7 +8,7 @@ export class AuditService {
   static async log(
     action: string,
     performedBy: string,
-    resourceType: 'schedule' | 'room' | 'user' | 'display-content' | 'display-media',
+    resourceType: 'schedule' | 'room' | 'user' | 'display-content' | 'display-media' | 'analytics',
     resourceId: string | null,
     details?: Record<string, unknown>
   ) {
@@ -54,6 +54,8 @@ export class AuditService {
 
     if (filters?.action) {
       query.action = filters.action;
+    } else {
+      query.action = { $nin: ['ANALYTICS_VIEW', 'ANALYTICS_EXPORT'] };
     }
 
     if (filters?.resourceType) {
@@ -73,6 +75,7 @@ export class AuditService {
     const total = await AuditLog.countDocuments(query);
     const logs = await AuditLog.find(query)
       .populate('performedBy', 'name email role')
+      .populate('scheduleId', 'title')
       .sort({ timestamp: -1 })
       .skip((page - 1) * limit)
       .limit(limit)

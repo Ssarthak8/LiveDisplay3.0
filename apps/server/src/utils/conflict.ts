@@ -37,19 +37,12 @@ export async function checkConflict(
   }
 
   const conflicting = await Schedule.findOne(query)
-    .populate('createdBy', 'name email phone department')
     .populate('roomId', 'roomNumber building')
     .lean();
 
   if (!conflicting) return null;
 
   const room = conflicting.roomId as unknown as { roomNumber: string; building: string };
-  const creator = conflicting.createdBy as unknown as {
-    name: string;
-    email: string;
-    phone: string;
-    department: string;
-  };
 
   return {
     scheduleId: String(conflicting._id),
@@ -59,11 +52,8 @@ export async function checkConflict(
     endTime: conflicting.endTime,
     roomNumber: room.roomNumber,
     building: room.building,
-    createdBy: {
-      name: creator.name,
-      email: creator.email,
-      phone: creator.phone,
-      department: creator.department,
-    },
+    faculty: conflicting.faculty,
+    roomCoordinator: conflicting.roomCoordinator,
+    coordinatorMobileNumber: conflicting.coordinatorMobileNumber,
   };
 }

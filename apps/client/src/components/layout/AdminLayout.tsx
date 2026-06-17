@@ -17,6 +17,7 @@ import {
   Building2,
   Users,
   MonitorPlay,
+  BarChart3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -24,6 +25,7 @@ const navItems = [
   { to: '/admin/dashboard',   icon: LayoutDashboard, label: 'Dashboard',   end: true },
   { to: '/admin/schedules',   icon: Calendar,        label: 'Schedules',   end: false },
   { to: '/admin/rooms',       icon: DoorOpen,        label: 'Rooms',       end: false },
+  { to: '/admin/analytics',   icon: BarChart3,       label: 'Analytics',   end: false },
   { to: '/admin/audit-logs',  icon: ClipboardList,   label: 'Audit Logs',  end: false },
 ];
 

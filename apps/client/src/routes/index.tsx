@@ -11,6 +11,7 @@ import AdminLogin from '@/pages/admin/Login';
 import Dashboard from '@/pages/admin/Dashboard';
 import Schedules from '@/pages/admin/Schedules';
 import Rooms from '@/pages/admin/Rooms';
+import Analytics from '@/pages/admin/Analytics';
 import AuditLogs from '@/pages/admin/AuditLogs';
 import Users from '@/pages/admin/Users';
 import DisplayMedia from '@/pages/admin/DisplayMedia';
@@ -132,6 +133,7 @@ export const router = createBrowserRouter([
       { path: 'dashboard', element: <Dashboard /> },
       { path: 'schedules', element: <Schedules /> },
       { path: 'rooms', element: <Rooms /> },
+      { path: 'analytics', element: <Analytics /> },
       { path: 'audit-logs', element: <AuditLogs /> },
       {
         path: 'users',

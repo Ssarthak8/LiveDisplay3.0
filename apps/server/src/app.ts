@@ -12,6 +12,7 @@ import scheduleRoutes from './routes/schedule.routes.js';
 import auditRoutes from './routes/audit.routes.js';
 import displayContentRoutes from './routes/display-content.routes.js';
 import displayMediaRoutes from './routes/display-media.routes.js';
+import analyticsRoutes from './routes/analytics.routes.js';
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use('/api/schedules', scheduleRoutes);
 app.use('/api/audit-logs', auditRoutes);
 app.use('/api/display-content', displayContentRoutes);
 app.use('/api/display-media', displayMediaRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Error handler (must be last)
 app.use(errorHandler);

@@ -150,6 +150,8 @@ test('Integration: Schedule Statistics and Timezone Consistency', async (t) => {
         date: todayKolkata,
         startTime: formatTZTime(ongoingStart),
         endTime: formatTZTime(ongoingEnd),
+        roomCoordinator: 'Rohit',
+        coordinatorMobileNumber: '1234567890',
         createdBy: user._id,
       },
       {
@@ -160,6 +162,8 @@ test('Integration: Schedule Statistics and Timezone Consistency', async (t) => {
         date: todayKolkata,
         startTime: formatTZTime(upcomingStart),
         endTime: formatTZTime(upcomingEnd),
+        roomCoordinator: 'Rohit',
+        coordinatorMobileNumber: '1234567890',
         createdBy: user._id,
       },
       {
@@ -170,6 +174,8 @@ test('Integration: Schedule Statistics and Timezone Consistency', async (t) => {
         date: todayKolkata,
         startTime: formatTZTime(completedStart),
         endTime: formatTZTime(completedEnd),
+        roomCoordinator: 'Rohit',
+        coordinatorMobileNumber: '1234567890',
         createdBy: user._id,
       },
     ];

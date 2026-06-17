@@ -7,10 +7,11 @@ export const AuditAction = z.enum([
   'USER_CREATED', 'USER_UPDATED', 'USER_DISABLED', 'PASSWORD_RESET',
   'DISPLAY_CONTENT_CREATED', 'DISPLAY_CONTENT_UPDATED', 'DISPLAY_CONTENT_DELETED',
   'DISPLAY_MEDIA_CREATED', 'DISPLAY_MEDIA_UPDATED', 'DISPLAY_MEDIA_DELETED',
+  'ANALYTICS_VIEW', 'ANALYTICS_EXPORT',
 ]);
 export type AuditAction = z.infer<typeof AuditAction>;
 
-export const ResourceType = z.enum(['schedule', 'room', 'user', 'display-content', 'display-media']);
+export const ResourceType = z.enum(['schedule', 'room', 'user', 'display-content', 'display-media', 'analytics']);
 export type ResourceType = z.infer<typeof ResourceType>;
 
 export const AuditLogSchema = z.object({
