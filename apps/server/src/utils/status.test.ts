@@ -93,9 +93,9 @@ test('Integration: Schedule Statistics and Timezone Consistency', async (t) => {
     });
 
     const room = await Room.create({
-      roomNumber: 'T-101',
+      roomNumber: 'Aap',
       building: 'Test Building',
-      capacity: 10,
+      capacity: 50,
     });
 
     // 2. We want to test different timezones, let's simulate with 'Asia/Kolkata' (GMT+5:30)

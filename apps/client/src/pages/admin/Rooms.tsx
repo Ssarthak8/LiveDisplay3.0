@@ -4,6 +4,7 @@ import { useRooms, useCreateRoom, useUpdateRoom, useDeleteRoom } from '@/hooks/u
 import { useSocketEvents } from '@/hooks/useSocketEvents';
 import { useTodaySchedules } from '@/hooks/useApi';
 import { cn } from '@/lib/utils';
+import { ROOM_MASTER_DATA, RoomNames, RoomName } from '@room-scheduler/shared-types';
 import {
   Plus, Edit2, Trash2, DoorOpen, Users, Building2,
   X, Loader2, CheckCircle2, XCircle,
@@ -262,11 +263,29 @@ export default function Rooms() {
                 <FormSection title="Room Information" />
                 <div>
                   <label className="block text-xs font-semibold text-surface-700 dark:text-surface-300 mb-1.5">
-                    Room Number / ID <span className="text-danger-500">*</span>
+                    Room Name <span className="text-danger-500">*</span>
                   </label>
-                  <input type="text" required value={form.roomNumber}
-                    onChange={(e) => setForm({ ...form, roomNumber: e.target.value })}
-                    className={inputClass('roomNumber')} placeholder="e.g. A-101, B-204" />
+                  <select
+                    required
+                    value={form.roomNumber}
+                    onChange={(e) => {
+                      const selectedVal = e.target.value;
+                      const presetCapacity = selectedVal ? String(ROOM_MASTER_DATA[selectedVal as RoomName]) : '';
+                      setForm({
+                        ...form,
+                        roomNumber: selectedVal,
+                        capacity: presetCapacity,
+                      });
+                    }}
+                    className={inputClass('roomNumber')}
+                  >
+                    <option value="">Select a Room</option>
+                    {RoomNames.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
                   {formErrors.roomNumber && <p className="mt-1 text-xs text-danger-600">{formErrors.roomNumber}</p>}
                 </div>
                 <div>
@@ -284,11 +303,10 @@ export default function Rooms() {
                 <FormSection title="Capacity" />
                 <div>
                   <label className="block text-xs font-semibold text-surface-700 dark:text-surface-300 mb-1.5">
-                    Seating Capacity <span className="text-danger-500">*</span>
+                    Seating Capacity <span className="text-surface-500">(Auto-filled)</span>
                   </label>
                   <input type="number" required min="1" max="1000" value={form.capacity}
-                    onChange={(e) => setForm({ ...form, capacity: e.target.value })}
-                    className={inputClass('capacity')} placeholder="e.g. 50" />
+                    className={inputClass('capacity')} placeholder="Select a room to set capacity" disabled />
                   {formErrors.capacity && <p className="mt-1 text-xs text-danger-600">{formErrors.capacity}</p>}
                 </div>
               </div>

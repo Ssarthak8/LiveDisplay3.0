@@ -3,8 +3,8 @@ export { UserRole, UserSchema, CreateUserSchema, LoginSchema, UpdateUserSchema }
 export type { User, CreateUserInput, LoginInput, UpdateUserInput } from './user.js';
 
 // Room types
-export { RoomSchema, CreateRoomSchema, UpdateRoomSchema } from './room.js';
-export type { Room, CreateRoomInput, UpdateRoomInput } from './room.js';
+export { RoomSchema, CreateRoomSchema, UpdateRoomSchema, ROOM_MASTER_DATA, RoomNames } from './room.js';
+export type { Room, CreateRoomInput, UpdateRoomInput, RoomName } from './room.js';
 
 // Schedule types
 export { EventType, ScheduleStatus, ScheduleSchema, CreateScheduleSchema, UpdateScheduleSchema, ConflictDetailSchema } from './schedule.js';

@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { User } from '../models/User.js';
 import { Room } from '../models/Room.js';
+import { Schedule } from '../models/Schedule.js';
 import { connectDB } from '../config/db.js';
 
 export async function seedData() {
@@ -60,38 +61,39 @@ export async function seedData() {
     console.log('⏩ Production environment detected. Skipping default user seeding.');
   }
 
+  // Clear existing rooms and schedules to align completely with the new master list
+  await Room.deleteMany({});
+  await Schedule.deleteMany({});
+
   // Seed rooms
   const rooms = [
-    { roomNumber: 'A101', building: 'Main Building', capacity: 50 },
-    { roomNumber: 'A102', building: 'Main Building', capacity: 30 },
-    { roomNumber: 'B201', building: 'Science Block', capacity: 40 },
-    { roomNumber: 'B202', building: 'Science Block', capacity: 25 },
-    { roomNumber: 'C301', building: 'Engineering Wing', capacity: 60 },
-    { roomNumber: 'C302', building: 'Engineering Wing', capacity: 35 },
-    { roomNumber: 'L101', building: 'Library', capacity: 20 },
-    { roomNumber: 'AUD-1', building: 'Auditorium', capacity: 200 },
+    { roomNumber: 'Aap', building: 'Main Building', capacity: 50 },
+    { roomNumber: 'Communication', building: 'Main Building', capacity: 200 },
+    { roomNumber: 'CR6', building: 'Main Building', capacity: 50 },
+    { roomNumber: 'Disha', building: 'Main Building', capacity: 40 },
+    { roomNumber: 'Drishti', building: 'Main Building', capacity: 50 },
+    { roomNumber: 'Pragati', building: 'Main Building', capacity: 50 },
+    { roomNumber: 'Prathibha', building: 'Main Building', capacity: 50 },
+    { roomNumber: 'Prithvi', building: 'Main Building', capacity: 50 },
+    { roomNumber: 'Saksham', building: 'Main Building', capacity: 50 },
+    { roomNumber: 'Sankalp', building: 'Main Building', capacity: 50 },
+    { roomNumber: 'Sauwad', building: 'Main Building', capacity: 40 },
+    { roomNumber: 'Tej', building: 'Main Building', capacity: 80 },
+    { roomNumber: 'Udaan', building: 'Main Building', capacity: 50 },
+    { roomNumber: 'Vayu', building: 'Main Building', capacity: 80 },
   ];
 
   for (const roomData of rooms) {
-    const existing = await Room.findOne({
-      roomNumber: roomData.roomNumber,
-      building: roomData.building,
-    });
-    if (!existing) {
-      await Room.create(roomData);
-      console.log(`✅ Room created: ${roomData.roomNumber} (${roomData.building})`);
-    } else {
-      console.log(`⏩ Room already exists: ${roomData.roomNumber}`);
-    }
+    await Room.create(roomData);
+    console.log(`✅ Room created: ${roomData.roomNumber} (${roomData.building})`);
   }
 
   // Seed sample schedules
-  const room1 = await Room.findOne({ roomNumber: 'A101' });
-  const room2 = await Room.findOne({ roomNumber: 'B201' });
-  const room3 = await Room.findOne({ roomNumber: 'C301' });
+  const room1 = await Room.findOne({ roomNumber: 'Aap' });
+  const room2 = await Room.findOne({ roomNumber: 'Communication' });
+  const room3 = await Room.findOne({ roomNumber: 'CR6' });
 
   if (admin && room1 && room2 && room3) {
-    const { Schedule } = await import('../models/Schedule.js');
     const today = new Date();
     const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 

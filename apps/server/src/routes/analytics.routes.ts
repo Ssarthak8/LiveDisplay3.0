@@ -7,6 +7,7 @@ import { HistoricalBooking } from '../models/HistoricalBooking.js';
 import { AuditService } from '../services/audit.service.js';
 import { authenticate, authorize } from '../middleware/auth.middleware.js';
 import { AppError } from '../services/auth.service.js';
+import { ROOM_MASTER_DATA, RoomName } from '@room-scheduler/shared-types';
 import XLSX from 'xlsx';
 import multer from 'multer';
 import path from 'path';
@@ -34,23 +35,21 @@ const upload = multer({
   }
 });
 
-// Hardcoded historical capacities
-const HISTORICAL_ROOM_CAPACITIES: Record<string, number> = {
-  aap: 50,
-  communication: 200,
-  cr6: 50,
-  disha: 40,
-  drishti: 50,
-  pragati: 50,
-  prathibha: 50,
-  prithvi: 50,
-  saksham: 50,
-  sankalp: 50,
-  sauwad: 40,
-  tej: 80,
-  udaan: 50,
-  vayu: 80
-};
+// Helper: Get room capacity using ONLY the centralized Room Master Data mapping
+function getCapacity(roomNumber: string): number {
+  const trimmed = roomNumber.trim();
+  if (trimmed in ROOM_MASTER_DATA) {
+    return ROOM_MASTER_DATA[trimmed as RoomName];
+  }
+  // Try case-insensitive matching fallback in case of casing mismatch (though validation prevents this)
+  const matchedKey = Object.keys(ROOM_MASTER_DATA).find(
+    (k) => k.toLowerCase() === trimmed.toLowerCase()
+  );
+  if (matchedKey) {
+    return ROOM_MASTER_DATA[matchedKey as RoomName];
+  }
+  return 0;
+}
 
 // Helper: Parse Excel Date format
 function parseExcelDate(val: any): string | null {
@@ -151,9 +150,7 @@ async function calculateStats(startDate: string, endDate: string) {
   // Initialize stats map with all DB rooms so they appear in table/charts
   for (const r of dbRooms) {
     const normName = r.roomNumber.trim().toLowerCase();
-    const capacity = normName in HISTORICAL_ROOM_CAPACITIES 
-      ? HISTORICAL_ROOM_CAPACITIES[normName] 
-      : r.capacity;
+    const capacity = getCapacity(r.roomNumber);
     
     roomStatsMap.set(normName, {
       roomNumber: r.roomNumber,
@@ -171,9 +168,7 @@ async function calculateStats(startDate: string, endDate: string) {
     const normName = roomName.trim().toLowerCase();
     let stats = roomStatsMap.get(normName);
     if (!stats) {
-      const capacity = normName in HISTORICAL_ROOM_CAPACITIES 
-        ? HISTORICAL_ROOM_CAPACITIES[normName] 
-        : (dbRoom ? dbRoom.capacity : 0);
+      const capacity = getCapacity(roomName);
       
       stats = {
         roomNumber: roomName,
@@ -427,6 +422,8 @@ router.post('/upload', authenticate, authorize('superadmin', 'admin'), upload.si
 
       if (!hallName) {
         rowErrors.push("Missing 'Hall Name'");
+      } else if (!(hallName in ROOM_MASTER_DATA)) {
+        rowErrors.push(`Invalid room name '${hallName}'. Must match the Room Master Data list case-sensitively.`);
       }
 
       const parsedDate = parseExcelDate(rawDate);

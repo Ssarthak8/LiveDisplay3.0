@@ -2,6 +2,7 @@ import { Room } from '../models/Room.js';
 import { Schedule } from '../models/Schedule.js';
 import { AuditService } from './audit.service.js';
 import { AppError } from './auth.service.js';
+import { ROOM_MASTER_DATA, RoomName } from '@room-scheduler/shared-types';
 
 export class RoomService {
   /**
@@ -24,6 +25,17 @@ export class RoomService {
    * Create a new room.
    */
   static async create(data: { roomNumber: string; building: string; capacity: number }, userId: string) {
+    // Validate room number is in master data
+    if (!(data.roomNumber in ROOM_MASTER_DATA)) {
+      throw new AppError(`Room number '${data.roomNumber}' is not a valid room.`, 400);
+    }
+
+    // Force/validate capacity matches master data
+    const expectedCapacity = ROOM_MASTER_DATA[data.roomNumber as RoomName];
+    if (data.capacity !== expectedCapacity) {
+      throw new AppError(`Capacity for room ${data.roomNumber} must be ${expectedCapacity}.`, 400);
+    }
+
     // Check for duplicates
     const existing = await Room.findOne({
       roomNumber: data.roomNumber,
@@ -51,6 +63,23 @@ export class RoomService {
    * Update an existing room.
    */
   static async update(id: string, data: Partial<{ roomNumber: string; building: string; capacity: number }>, userId: string) {
+    const existingRoom = await Room.findById(id);
+    if (!existingRoom) throw new AppError('Room not found', 404);
+
+    const updatedRoomNumber = data.roomNumber !== undefined ? data.roomNumber : existingRoom.roomNumber;
+    const updatedCapacity = data.capacity !== undefined ? data.capacity : existingRoom.capacity;
+
+    // Validate room number is in master data
+    if (!(updatedRoomNumber in ROOM_MASTER_DATA)) {
+      throw new AppError(`Room number '${updatedRoomNumber}' is not a valid room.`, 400);
+    }
+
+    // Force/validate capacity matches master data
+    const expectedCapacity = ROOM_MASTER_DATA[updatedRoomNumber as RoomName];
+    if (updatedCapacity !== expectedCapacity) {
+      throw new AppError(`Capacity for room ${updatedRoomNumber} must be ${expectedCapacity}.`, 400);
+    }
+
     const room = await Room.findByIdAndUpdate(id, data, {
       new: true,
       runValidators: true,
