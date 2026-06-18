@@ -49,7 +49,7 @@ export const uploadDisplayImage = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB
+    fileSize: 50 * 1024 * 1024, // Updated upload limit to 50MB
   },
 }).single('image');
 
@@ -57,6 +57,6 @@ export const uploadDisplayMedia = multer({
   storage: mediaStorage,
   fileFilter,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB
+    fileSize: 50 * 1024 * 1024, // Updated upload limit to 50MB
   },
 }).single('image');
