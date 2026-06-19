@@ -112,8 +112,14 @@ function getDurationInHours(startTime: string, endTime: string): number {
   return Math.max(0, (endMin - startMin) / 60);
 }
 
+interface AnalyticsFilters {
+  roomCoordinator?: string;
+  room?: string;
+  purpose?: string;
+}
+
 // Common calculations function
-async function calculateStats(startDate: string, endDate: string) {
+async function calculateStats(startDate: string, endDate: string, filters: AnalyticsFilters = {}) {
   const dbRooms = await Room.find().lean();
   const dbRoomMap = new Map<string, any>();
   for (const r of dbRooms) {
@@ -147,9 +153,12 @@ async function calculateStats(startDate: string, endDate: string) {
 
   const roomStatsMap = new Map<string, RoomAccumulator>();
 
-  // Initialize stats map with all DB rooms so they appear in table/charts
+  // Initialize stats map with DB rooms that match the room filter
   for (const r of dbRooms) {
     const normName = r.roomNumber.trim().toLowerCase();
+    if (filters.room && normName !== filters.room.trim().toLowerCase()) {
+      continue;
+    }
     const capacity = getCapacity(r.roomNumber);
     
     roomStatsMap.set(normName, {
@@ -164,8 +173,11 @@ async function calculateStats(startDate: string, endDate: string) {
     });
   }
 
-  const getOrCreateStats = (roomName: string, dbRoom?: any): RoomAccumulator => {
+  const getOrCreateStats = (roomName: string, dbRoom?: any): RoomAccumulator | null => {
     const normName = roomName.trim().toLowerCase();
+    if (filters.room && normName !== filters.room.trim().toLowerCase()) {
+      return null;
+    }
     let stats = roomStatsMap.get(normName);
     if (!stats) {
       const capacity = getCapacity(roomName);
@@ -185,19 +197,65 @@ async function calculateStats(startDate: string, endDate: string) {
     return stats;
   };
 
+  const coordinatorBookingsMap = new Map<string, { name: string; bookings: number }>();
+  const roomHoursMap = new Map<string, { roomNumber: string; building: string; hoursUsed: number }>();
+
+  const trackCoordinator = (name?: string) => {
+    if (!name) return;
+    const trimmed = name.trim();
+    const key = trimmed.toLowerCase();
+    const existing = coordinatorBookingsMap.get(key);
+    if (existing) {
+      existing.bookings += 1;
+    } else {
+      coordinatorBookingsMap.set(key, { name: trimmed, bookings: 1 });
+    }
+  };
+
+  const trackRoomHours = (roomName: string, building: string, hours: number) => {
+    if (!roomName) return;
+    const trimmed = roomName.trim();
+    const key = trimmed.toLowerCase();
+    const existing = roomHoursMap.get(key);
+    if (existing) {
+      existing.hoursUsed += hours;
+    } else {
+      roomHoursMap.set(key, { roomNumber: trimmed, building, hoursUsed: hours });
+    }
+  };
+
   // Process current schedules
   for (const s of schedules) {
     const dbRoom = s.roomId as any;
     const roomName = dbRoom ? dbRoom.roomNumber : 'Unknown';
+
+    // Filter: Room Coordinator
+    if (filters.roomCoordinator && (!s.roomCoordinator || s.roomCoordinator.trim().toLowerCase() !== filters.roomCoordinator.trim().toLowerCase())) {
+      continue;
+    }
+
+    // Filter: Room
+    if (filters.room && roomName.trim().toLowerCase() !== filters.room.trim().toLowerCase()) {
+      continue;
+    }
+
+    // Filter: Purpose (s.type)
+    if (filters.purpose && (!s.type || s.type.trim().toLowerCase() !== filters.purpose.trim().toLowerCase())) {
+      continue;
+    }
+
     const stats = getOrCreateStats(roomName, dbRoom);
+    if (!stats) continue;
 
     const duration = getDurationInHours(s.startTime, s.endTime);
-    // Use assignedUsers.length, fallback to 0
     const participants = s.assignedUsers ? s.assignedUsers.length : 0;
 
     stats.totalBookings += 1;
     stats.totalHoursUsed += duration;
     stats.totalParticipants += participants;
+
+    trackCoordinator(s.roomCoordinator);
+    trackRoomHours(roomName, dbRoom ? dbRoom.building : 'Unknown', duration);
 
     if (stats.capacity > 0) {
       const occPercent = (participants / stats.capacity) * 100;
@@ -209,8 +267,25 @@ async function calculateStats(startDate: string, endDate: string) {
   // Process historical bookings
   for (const hb of historicalBookings) {
     const roomName = hb.hallName;
+
+    // Filter: Room Coordinator (bookedBy)
+    if (filters.roomCoordinator && (!hb.bookedBy || hb.bookedBy.trim().toLowerCase() !== filters.roomCoordinator.trim().toLowerCase())) {
+      continue;
+    }
+
+    // Filter: Room
+    if (filters.room && roomName.trim().toLowerCase() !== filters.room.trim().toLowerCase()) {
+      continue;
+    }
+
+    // Filter: Purpose
+    if (filters.purpose && (!hb.purpose || hb.purpose.trim().toLowerCase() !== filters.purpose.trim().toLowerCase())) {
+      continue;
+    }
+
     const dbRoom = dbRoomMap.get(roomName.trim().toLowerCase());
     const stats = getOrCreateStats(roomName, dbRoom);
+    if (!stats) continue;
 
     const duration = getDurationInHours(hb.startTime, hb.endTime);
     const participants = hb.numberOfPeople || 0;
@@ -218,6 +293,9 @@ async function calculateStats(startDate: string, endDate: string) {
     stats.totalBookings += 1;
     stats.totalHoursUsed += duration;
     stats.totalParticipants += participants;
+
+    trackCoordinator(hb.bookedBy);
+    trackRoomHours(roomName, dbRoom ? dbRoom.building : 'Historical', duration);
 
     if (stats.capacity > 0) {
       const occPercent = (participants / stats.capacity) * 100;
@@ -245,7 +323,7 @@ async function calculateStats(startDate: string, endDate: string) {
       : 0;
 
     roomStatsList.push({
-      roomId: stats.roomNumber, // Frontend maps by roomNumber / roomId string
+      roomId: stats.roomNumber,
       roomNumber: stats.roomNumber,
       building: stats.building,
       capacity: stats.capacity,
@@ -291,6 +369,19 @@ async function calculateStats(startDate: string, endDate: string) {
     ? Math.round((totalOccupancySum / totalOccupancyCount) * 10) / 10
     : 0;
 
+  const topRooms = Array.from(roomHoursMap.values())
+    .sort((a, b) => b.hoursUsed - a.hoursUsed || a.roomNumber.localeCompare(b.roomNumber))
+    .slice(0, 5)
+    .map(r => ({
+      roomNumber: r.roomNumber,
+      building: r.building,
+      hoursUsed: Math.round(r.hoursUsed * 10) / 10
+    }));
+
+  const topCoordinators = Array.from(coordinatorBookingsMap.values())
+    .sort((a, b) => b.bookings - a.bookings || a.name.localeCompare(b.name))
+    .slice(0, 5);
+
   return {
     summary: {
       totalBookings,
@@ -298,7 +389,9 @@ async function calculateStats(startDate: string, endDate: string) {
       totalParticipants,
       mostUsedRoom,
       highestOccupancyRoom,
-      averageOccupancyPercentage: averageOccupancyPercent
+      averageOccupancyPercentage: averageOccupancyPercent,
+      topRooms,
+      topCoordinators
     },
     roomStats: roomStatsList
   };
@@ -307,21 +400,48 @@ async function calculateStats(startDate: string, endDate: string) {
 // GET /api/analytics - Fetch aggregate statistics
 router.get('/', authenticate, authorize('superadmin', 'admin'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, roomCoordinator, room, purpose } = req.query;
     if (!startDate || !endDate) {
       res.status(400).json({ success: false, message: 'startDate and endDate are required' });
       return;
     }
 
-    const stats = await calculateStats(startDate as string, endDate as string);
+    const stats = await calculateStats(startDate as string, endDate as string, {
+      roomCoordinator: roomCoordinator as string,
+      room: room as string,
+      purpose: purpose as string
+    });
+
+    // Dynamically fetch unique coordinators
+    const [schedCoordinators, histCoordinators] = await Promise.all([
+      Schedule.distinct('roomCoordinator'),
+      HistoricalBooking.distinct('bookedBy')
+    ]);
+    const coordinatorsSet = new Set<string>();
+    schedCoordinators.forEach(c => c && coordinatorsSet.add(c.trim()));
+    histCoordinators.forEach(c => c && coordinatorsSet.add(c.trim()));
+    const coordinators = Array.from(coordinatorsSet).filter(Boolean).sort();
+
+    // Dynamically fetch unique purposes
+    const [schedTypes, histPurposes] = await Promise.all([
+      Schedule.distinct('type'),
+      HistoricalBooking.distinct('purpose')
+    ]);
+    const purposesSet = new Set<string>();
+    schedTypes.forEach(t => t && purposesSet.add(t.trim()));
+    histPurposes.forEach(p => p && purposesSet.add(p.trim()));
+    const purposes = Array.from(purposesSet).filter(Boolean).sort();
 
     // Audit log analytics viewing
     await AuditService.log('ANALYTICS_VIEW', req.user!.userId, 'analytics', null, {
       startDate,
-      endDate
+      endDate,
+      roomCoordinator,
+      room,
+      purpose
     });
 
-    res.json({ success: true, ...stats });
+    res.json({ success: true, ...stats, coordinators, purposes });
   } catch (error) {
     next(error);
   }
@@ -525,19 +645,48 @@ router.delete('/upload/:importBatchId', authenticate, authorize('superadmin', 'a
   }
 });
 
+// Helper to format time as 12-hour format without leading zero
+function formatTimeTo12Hour(t: string): string {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h % 12 || 12;
+  return `${hour12}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
 // GET /api/analytics/export - Export Excel utilization report
 router.get('/export', authenticate, authorize('superadmin', 'admin'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, roomCoordinator, room, purpose } = req.query;
     if (!startDate || !endDate) {
       res.status(400).json({ success: false, message: 'startDate and endDate are required' });
       return;
     }
 
-    const stats = await calculateStats(startDate as string, endDate as string);
+    const stats = await calculateStats(startDate as string, endDate as string, {
+      roomCoordinator: roomCoordinator as string,
+      room: room as string,
+      purpose: purpose as string
+    });
+
     const historicalBookings = await HistoricalBooking.find({
       date: { $gte: startDate, $lte: endDate }
     }).sort({ date: 1, startTime: 1 }).lean();
+
+    // Filter historical bookings to match active filters
+    const filteredHistorical = historicalBookings.filter(hb => {
+      const roomName = hb.hallName;
+      if (room && roomName.trim().toLowerCase() !== (room as string).trim().toLowerCase()) {
+        return false;
+      }
+      if (roomCoordinator && (!hb.bookedBy || hb.bookedBy.trim().toLowerCase() !== (roomCoordinator as string).trim().toLowerCase())) {
+        return false;
+      }
+      if (purpose && (!hb.purpose || hb.purpose.trim().toLowerCase() !== (purpose as string).trim().toLowerCase())) {
+        return false;
+      }
+      return true;
+    });
 
     const wb = XLSX.utils.book_new();
 
@@ -566,13 +715,13 @@ router.get('/export', authenticate, authorize('superadmin', 'admin'), async (req
       'Purpose',
       'Number of People'
     ];
-    const sheet2Rows = historicalBookings.map((hb) => [
+    const sheet2Rows = filteredHistorical.map((hb) => [
       hb.bookedBy || '',
       hb.email || '',
       hb.mobileNo || '',
       hb.date,
-      hb.startTime,
-      hb.endTime,
+      formatTimeTo12Hour(hb.startTime),
+      formatTimeTo12Hour(hb.endTime),
       hb.hallName,
       hb.purpose || '',
       hb.numberOfPeople
@@ -584,7 +733,10 @@ router.get('/export', authenticate, authorize('superadmin', 'admin'), async (req
 
     await AuditService.log('ANALYTICS_EXPORT', req.user!.userId, 'analytics', null, {
       startDate,
-      endDate
+      endDate,
+      roomCoordinator,
+      room,
+      purpose
     });
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

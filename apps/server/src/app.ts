@@ -13,6 +13,7 @@ import auditRoutes from './routes/audit.routes.js';
 import displayContentRoutes from './routes/display-content.routes.js';
 import displayMediaRoutes from './routes/display-media.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
+import announcementRoutes from './routes/announcement.routes.js';
 
 const app = express();
 
@@ -42,6 +43,7 @@ app.use('/api/audit-logs', auditRoutes);
 app.use('/api/display-content', displayContentRoutes);
 app.use('/api/display-media', displayMediaRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/announcements', announcementRoutes);
 
 // Error handler (must be last)
 app.use(errorHandler);

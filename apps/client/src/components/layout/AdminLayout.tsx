@@ -18,6 +18,7 @@ import {
   Users,
   MonitorPlay,
   BarChart3,
+  Megaphone,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -122,16 +123,28 @@ export default function AdminLayout() {
           )}
 
           {(user?.role === 'superadmin' || user?.role === 'admin') && (
-            <NavLink
-              to="/admin/display-media"
-              onClick={() => setSidebarOpen(false)}
-              className={({ isActive }) =>
-                cn('nav-item', isActive && 'active')
-              }
-            >
-              <MonitorPlay className="w-4 h-4 shrink-0" />
-              Display Media
-            </NavLink>
+            <>
+              <NavLink
+                to="/admin/display-media"
+                onClick={() => setSidebarOpen(false)}
+                className={({ isActive }) =>
+                  cn('nav-item', isActive && 'active')
+                }
+              >
+                <MonitorPlay className="w-4 h-4 shrink-0" />
+                Display Media
+              </NavLink>
+              <NavLink
+                to="/admin/announcements"
+                onClick={() => setSidebarOpen(false)}
+                className={({ isActive }) =>
+                  cn('nav-item', isActive && 'active')
+                }
+              >
+                <Megaphone className="w-4 h-4 shrink-0" />
+                Announcements
+              </NavLink>
+            </>
           )}
 
           <div className="pt-4 mt-4 border-t border-surface-200 dark:border-surface-700">

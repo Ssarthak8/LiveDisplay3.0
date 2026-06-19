@@ -50,6 +50,15 @@ interface Summary {
     occupancyPercentage: number;
   } | null;
   averageOccupancyPercentage: number;
+  topRooms?: {
+    roomNumber: string;
+    building: string;
+    hoursUsed: number;
+  }[];
+  topCoordinators?: {
+    name: string;
+    bookings: number;
+  }[];
 }
 
 interface AnalyticsData {
@@ -110,6 +119,14 @@ export default function Analytics() {
   const [rangeType, setRangeType] = useState<'week' | 'month' | 'lastMonth' | 'custom'>('week');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [roomCoordinator, setRoomCoordinator] = useState('All');
+  const [room, setRoom] = useState('All');
+  const [purpose, setPurpose] = useState('All');
+
+  const [coordinatorsList, setCoordinatorsList] = useState<string[]>([]);
+  const [purposesList, setPurposesList] = useState<string[]>([]);
+  const [roomsList, setRoomsList] = useState<any[]>([]);
+
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -171,15 +188,43 @@ export default function Analytics() {
     }
   }, [rangeType]);
 
+  // Fetch rooms list once
+  const fetchRooms = async () => {
+    try {
+      const response = await api.get('/rooms');
+      if (response.data?.success) {
+        setRoomsList(response.data.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch rooms list', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchRooms();
+  }, []);
+
   // Fetch data
   const fetchData = async () => {
     if (!startDate || !endDate) return;
     setIsLoading(true);
     try {
-      const response = await api.get<AnalyticsData>('/analytics', {
-        params: { startDate, endDate }
+      const response = await api.get<AnalyticsData & { coordinators: string[]; purposes: string[] }>('/analytics', {
+        params: {
+          startDate,
+          endDate,
+          roomCoordinator: roomCoordinator === 'All' ? undefined : roomCoordinator,
+          room: room === 'All' ? undefined : room,
+          purpose: purpose === 'All' ? undefined : purpose,
+        }
       });
       setData(response.data);
+      if (response.data.coordinators) {
+        setCoordinatorsList(response.data.coordinators);
+      }
+      if (response.data.purposes) {
+        setPurposesList(response.data.purposes);
+      }
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to fetch analytics');
     } finally {
@@ -202,7 +247,7 @@ export default function Analytics() {
 
   useEffect(() => {
     fetchData();
-  }, [startDate, endDate]);
+  }, [startDate, endDate, roomCoordinator, room, purpose]);
 
   useEffect(() => {
     fetchBatches();
@@ -214,7 +259,13 @@ export default function Analytics() {
     setIsExporting(true);
     try {
       const response = await api.get('/analytics/export', {
-        params: { startDate, endDate },
+        params: {
+          startDate,
+          endDate,
+          roomCoordinator: roomCoordinator === 'All' ? undefined : roomCoordinator,
+          room: room === 'All' ? undefined : room,
+          purpose: purpose === 'All' ? undefined : purpose,
+        },
         responseType: 'blob'
       });
       const blob = new Blob([response.data], {
@@ -319,112 +370,174 @@ export default function Analytics() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header & Main Actions */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-surface-900 dark:text-white flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-primary-700 dark:text-primary-400" />
-            Room Utilization Analytics
-          </h1>
-          <p className="text-sm text-surface-500 mt-0.5">
-            Monitor room bookings, usage hours, export reports, and upload historical records.
-          </p>
-          {/* Note Info */}
-          <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-blue-50 dark:bg-blue-950/20 text-blue-750 dark:text-blue-400 text-xs border border-blue-100 dark:border-blue-900/50">
-            <Info className="w-3.5 h-3.5" />
-            <span>Analytics includes uploaded data and current booking data.</span>
-          </div>
+      <div>
+        <h1 className="text-xl font-bold text-surface-900 dark:text-white flex items-center gap-2">
+          <BarChart3 className="w-5 h-5 text-primary-700 dark:text-primary-400" />
+          Room Utilization Analytics
+        </h1>
+        <p className="text-sm text-surface-500 mt-0.5">
+          Monitor room bookings, usage hours, export reports, and upload historical records.
+        </p>
+        {/* Note Info */}
+        <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-blue-50 dark:bg-blue-950/20 text-blue-750 dark:text-blue-400 text-xs border border-blue-100 dark:border-blue-900/50">
+          <Info className="w-3.5 h-3.5" />
+          <span>Analytics includes uploaded data and current booking data.</span>
         </div>
+      </div>
 
-        {/* Filters and buttons */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Date range presets */}
-          <div className="flex border border-surface-300 dark:border-surface-600 rounded-md overflow-hidden text-xs font-medium bg-white dark:bg-surface-850 shadow-sm">
-            <button
-              onClick={() => setRangeType('week')}
-              className={cn(
-                'px-3 py-1.5 transition-colors',
-                rangeType === 'week'
-                  ? 'bg-surface-100 dark:bg-surface-700 text-surface-900 dark:text-white'
-                  : 'text-surface-500 hover:text-surface-750 hover:bg-surface-25 dark:hover:bg-surface-800'
+      {/* Advanced Filters Panel */}
+      <div className="card p-5 space-y-4">
+        <div className="flex flex-col gap-4">
+          {/* Top row: Date Range Presets & Action Buttons */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Date range presets */}
+              <div className="flex border border-surface-300 dark:border-surface-600 rounded-md overflow-hidden text-xs font-medium bg-white dark:bg-surface-850 shadow-sm">
+                <button
+                  onClick={() => setRangeType('week')}
+                  className={cn(
+                    'px-3 py-1.5 transition-colors',
+                    rangeType === 'week'
+                      ? 'bg-surface-100 dark:bg-surface-700 text-surface-900 dark:text-white'
+                      : 'text-surface-500 hover:text-surface-750 hover:bg-surface-25 dark:hover:bg-surface-800'
+                  )}
+                >
+                  This Week
+                </button>
+                <button
+                  onClick={() => setRangeType('month')}
+                  className={cn(
+                    'px-3 py-1.5 border-l border-surface-300 dark:border-surface-600 transition-colors',
+                    rangeType === 'month'
+                      ? 'bg-surface-100 dark:bg-surface-700 text-surface-900 dark:text-white'
+                      : 'text-surface-500 hover:text-surface-750 hover:bg-surface-25 dark:hover:bg-surface-800'
+                  )}
+                >
+                  This Month
+                </button>
+                <button
+                  onClick={() => setRangeType('lastMonth')}
+                  className={cn(
+                    'px-3 py-1.5 border-l border-surface-300 dark:border-surface-600 transition-colors',
+                    rangeType === 'lastMonth'
+                      ? 'bg-surface-100 dark:bg-surface-700 text-surface-900 dark:text-white'
+                      : 'text-surface-500 hover:text-surface-750 hover:bg-surface-25 dark:hover:bg-surface-800'
+                  )}
+                >
+                  Last Month
+                </button>
+                <button
+                  onClick={() => setRangeType('custom')}
+                  className={cn(
+                    'px-3 py-1.5 border-l border-surface-300 dark:border-surface-600 transition-colors',
+                    rangeType === 'custom'
+                      ? 'bg-surface-100 dark:bg-surface-700 text-surface-900 dark:text-white'
+                      : 'text-surface-500 hover:text-surface-750 hover:bg-surface-25 dark:hover:bg-surface-800'
+                  )}
+                >
+                  Custom Date Range
+                </button>
+              </div>
+
+              {/* Custom date range input */}
+              {rangeType === 'custom' && (
+                <div className="flex items-center gap-2 bg-white dark:bg-surface-800 p-1 border border-surface-200 dark:border-surface-700 rounded-md">
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="form-input text-xs border-0 py-1"
+                  />
+                  <span className="text-xs text-surface-400">to</span>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="form-input text-xs border-0 py-1"
+                  />
+                </div>
               )}
-            >
-              This Week
-            </button>
-            <button
-              onClick={() => setRangeType('month')}
-              className={cn(
-                'px-3 py-1.5 border-l border-surface-300 dark:border-surface-600 transition-colors',
-                rangeType === 'month'
-                  ? 'bg-surface-100 dark:bg-surface-700 text-surface-900 dark:text-white'
-                  : 'text-surface-500 hover:text-surface-750 hover:bg-surface-25 dark:hover:bg-surface-800'
-              )}
-            >
-              This Month
-            </button>
-            <button
-              onClick={() => setRangeType('lastMonth')}
-              className={cn(
-                'px-3 py-1.5 border-l border-surface-300 dark:border-surface-600 transition-colors',
-                rangeType === 'lastMonth'
-                  ? 'bg-surface-100 dark:bg-surface-700 text-surface-900 dark:text-white'
-                  : 'text-surface-500 hover:text-surface-750 hover:bg-surface-25 dark:hover:bg-surface-800'
-              )}
-            >
-              Last Month
-            </button>
-            <button
-              onClick={() => setRangeType('custom')}
-              className={cn(
-                'px-3 py-1.5 border-l border-surface-300 dark:border-surface-600 transition-colors',
-                rangeType === 'custom'
-                  ? 'bg-surface-100 dark:bg-surface-700 text-surface-900 dark:text-white'
-                  : 'text-surface-500 hover:text-surface-750 hover:bg-surface-25 dark:hover:bg-surface-800'
-              )}
-            >
-              Custom Date Range
-            </button>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setShowUploadModal(true)}
+                className="btn-secondary py-1.5 text-xs inline-flex items-center gap-1.5 bg-white dark:bg-surface-800 border-surface-300"
+              >
+                <Upload className="w-3.5 h-3.5 text-surface-500" />
+                Upload Data
+              </button>
+              <button
+                onClick={handleExport}
+                disabled={isExporting || isLoading}
+                className="btn-primary py-1.5 text-xs inline-flex items-center gap-1.5"
+              >
+                {isExporting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Download className="w-3.5 h-3.5" />
+                )}
+                Export Report
+              </button>
+            </div>
           </div>
 
-          {/* Custom date range input */}
-          {rangeType === 'custom' && (
-            <div className="flex items-center gap-2 bg-white dark:bg-surface-800 p-1 border border-surface-200 dark:border-surface-700 rounded-md">
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="form-input text-xs border-0 py-1"
-              />
-              <span className="text-xs text-surface-400">to</span>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="form-input text-xs border-0 py-1"
-              />
+          {/* Bottom row: Dropdown filters */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-surface-200 dark:border-surface-700">
+            <div>
+              <label className="block text-xs font-semibold text-surface-500 mb-1.5">
+                Room Coordinator
+              </label>
+              <select
+                value={roomCoordinator}
+                onChange={(e) => setRoomCoordinator(e.target.value)}
+                className="form-input text-xs"
+              >
+                <option value="All">All Coordinators</option>
+                {coordinatorsList.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
             </div>
-          )}
 
-          {/* Action buttons */}
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => setShowUploadModal(true)}
-              className="btn-secondary py-1.5 text-xs inline-flex items-center gap-1.5 bg-white dark:bg-surface-800 border-surface-300"
-            >
-              <Upload className="w-3.5 h-3.5 text-surface-500" />
-              Upload Data
-            </button>
-            <button
-              onClick={handleExport}
-              disabled={isExporting || isLoading}
-              className="btn-primary py-1.5 text-xs inline-flex items-center gap-1.5"
-            >
-              {isExporting ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Download className="w-3.5 h-3.5" />
-              )}
-              Export Report
-            </button>
+            <div>
+              <label className="block text-xs font-semibold text-surface-500 mb-1.5">
+                Room
+              </label>
+              <select
+                value={room}
+                onChange={(e) => setRoom(e.target.value)}
+                className="form-input text-xs"
+              >
+                <option value="All">All Rooms</option>
+                {roomsList.map((r) => (
+                  <option key={r.roomNumber} value={r.roomNumber}>
+                    {r.roomNumber} ({r.building})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-surface-500 mb-1.5">
+                Purpose
+              </label>
+              <select
+                value={purpose}
+                onChange={(e) => setPurpose(e.target.value)}
+                className="form-input text-xs"
+              >
+                <option value="All">All Purposes</option>
+                {purposesList.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -532,6 +645,70 @@ export default function Analytics() {
                   <Percent className="w-4 h-4" />
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Ranking Cards Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 animate-fade-in">
+            {/* Top 5 Rooms Card */}
+            <div className="card p-5 space-y-4">
+              <h2 className="text-sm font-bold text-surface-900 dark:text-white flex items-center gap-1.5">
+                <DoorOpen className="w-4 h-4 text-surface-450" />
+                Top 5 Most Used Rooms
+              </h2>
+              {!data?.summary.topRooms?.length ? (
+                <p className="text-xs text-surface-400 py-6 text-center">No room usage data available</p>
+              ) : (
+                <div className="space-y-3">
+                  {data.summary.topRooms.map((roomItem: any, idx: number) => (
+                    <div key={roomItem.roomNumber} className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-primary-50 dark:bg-primary-950/30 text-primary-750 dark:text-primary-400 flex items-center justify-center font-bold text-[10px]">
+                          {idx + 1}
+                        </span>
+                        <span className="font-semibold text-surface-800 dark:text-surface-200">
+                          {roomItem.roomNumber}
+                        </span>
+                        <span className="text-[10px] text-surface-400">
+                          ({roomItem.building})
+                        </span>
+                      </div>
+                      <span className="font-bold text-surface-900 dark:text-white">
+                        {roomItem.hoursUsed} hours
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Top 5 Coordinators Card */}
+            <div className="card p-5 space-y-4">
+              <h2 className="text-sm font-bold text-surface-900 dark:text-white flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-surface-450" />
+                Top 5 Room Coordinators
+              </h2>
+              {!data?.summary.topCoordinators?.length ? (
+                <p className="text-xs text-surface-400 py-6 text-center">No coordinator booking data available</p>
+              ) : (
+                <div className="space-y-3">
+                  {data.summary.topCoordinators.map((coordinator: any, idx: number) => (
+                    <div key={coordinator.name} className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-450 flex items-center justify-center font-bold text-[10px]">
+                          {idx + 1}
+                        </span>
+                        <span className="font-semibold text-surface-800 dark:text-surface-200">
+                          {coordinator.name}
+                        </span>
+                      </div>
+                      <span className="font-bold text-surface-900 dark:text-white">
+                        {coordinator.bookings} bookings
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

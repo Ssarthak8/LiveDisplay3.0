@@ -15,6 +15,7 @@ import Analytics from '@/pages/admin/Analytics';
 import AuditLogs from '@/pages/admin/AuditLogs';
 import Users from '@/pages/admin/Users';
 import DisplayMedia from '@/pages/admin/DisplayMedia';
+import Announcements from '@/pages/admin/Announcements';
 import ChangePassword from '@/pages/admin/ChangePassword';
 
 // Viewer Pages
@@ -148,6 +149,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requireRole={['superadmin', 'admin']}>
             <DisplayMedia />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'announcements',
+        element: (
+          <ProtectedRoute requireRole={['superadmin', 'admin']}>
+            <Announcements />
           </ProtectedRoute>
         ),
       },

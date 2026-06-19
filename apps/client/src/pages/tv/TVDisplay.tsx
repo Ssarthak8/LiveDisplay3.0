@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useTodaySchedules, useRooms, useActiveDisplayMedia } from '@/hooks/useApi';
+import { useTodaySchedules, useRooms, useActiveDisplayMedia, useActiveAnnouncements } from '@/hooks/useApi';
 import { useSocketEvents } from '@/hooks/useSocketEvents';
 import { cn } from '@/lib/utils';
 import {
   Wifi, WifiOff, Clock, MapPin, User, DoorOpen,
-  CheckCircle2, XCircle, Monitor, Loader2,
+  CheckCircle2, XCircle, Monitor, Loader2, Megaphone,
 } from 'lucide-react';
 
 export default function TVDisplay() {
@@ -12,6 +12,7 @@ export default function TVDisplay() {
   const { data: todayData } = useTodaySchedules();
   const { data: rooms } = useRooms();
   const { data: displayMedia, isLoading: isLoadingMedia } = useActiveDisplayMedia();
+  const { data: announcements } = useActiveAnnouncements();
 
   // Clock
   const [now, setNow] = useState(new Date());
@@ -119,7 +120,7 @@ export default function TVDisplay() {
     return Math.min(Math.max((elapsed / total) * 100, 0), 100);
   };
 
-  const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+  const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
   const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
   const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -129,9 +130,10 @@ export default function TVDisplay() {
     <div className={cn('min-h-screen bg-surface-950 text-white tv-mode overflow-hidden', cursorVisible && 'cursor-visible')}>
       <div className="h-screen flex flex-col lg:flex-row p-4 lg:p-5 gap-4 lg:gap-5">
         
-        {/* ═══════════ LEFT PANEL (60%): Slideshow/Banner Signage Area ═══════════ */}
-        <div className="flex-1 lg:w-3/5 flex flex-col h-full min-w-0">
-          <div className="flex-1 relative rounded-2xl overflow-hidden bg-surface-900 border border-surface-800/80 shadow-2xl">
+        {/* ═══════════ LEFT PANEL (60%): Slideshow & Text Announcements ═══════════ */}
+        <div className="flex-1 lg:w-3/5 flex flex-col h-full min-w-0 gap-4 lg:gap-5">
+          {/* Top Section: Slideshow Signage (70% height) */}
+          <div className="h-[70%] relative rounded-2xl overflow-hidden bg-surface-900 border border-surface-800/80 shadow-2xl">
             {isLoadingMedia ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface-950/60 animate-pulse">
                 <Loader2 className="w-10 h-10 text-primary-500 animate-spin mb-3" />
@@ -215,6 +217,43 @@ export default function TVDisplay() {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Bottom Section: Announcements Board (30% height) */}
+          <div className="h-[30%] bg-surface-900/50 border border-surface-800/80 rounded-2xl p-5 flex flex-col min-h-0 shadow-2xl relative overflow-hidden">
+            <div className="flex items-center gap-2 mb-3 shrink-0 border-b border-surface-800/50 pb-2">
+              <Megaphone className="w-4 h-4 text-primary-500" />
+              <h2 className="text-[11px] font-extrabold uppercase tracking-widest text-surface-400">
+                Announcements board
+              </h2>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto min-h-0 space-y-2 pr-1">
+              {!announcements?.length ? (
+                <div className="h-full flex items-center justify-center text-xs text-surface-500 italic">
+                  No active announcements today.
+                </div>
+              ) : (
+                announcements.map((ann: any) => (
+                  <div
+                    key={ann._id}
+                    className={cn(
+                      'p-4 rounded-xl border flex items-start gap-3 animate-fade-in text-sm md:text-base leading-snug',
+                      ann.priority === 'Important'
+                        ? 'bg-danger-950/20 border-danger-900/40 text-danger-200'
+                        : 'bg-surface-900/40 border-surface-850 text-surface-200'
+                    )}
+                  >
+                    {ann.priority === 'Important' && (
+                      <span className="shrink-0 px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-danger-600 text-white animate-pulse">
+                        IMPORTANT
+                      </span>
+                    )}
+                    <span className="font-semibold">{ann.content}</span>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
 

@@ -49,6 +49,11 @@ export function useSocketEvents() {
       queryClient.invalidateQueries({ queryKey: ['display-media-active'] });
     };
 
+    const handleAnnouncementsUpdated = () => {
+      queryClient.invalidateQueries({ queryKey: ['announcements'] });
+      queryClient.invalidateQueries({ queryKey: ['announcements-active'] });
+    };
+
     socket.on('schedule:created', handleScheduleCreated);
     socket.on('schedule:updated', handleScheduleUpdated);
     socket.on('schedule:deleted', handleScheduleDeleted);
@@ -56,6 +61,7 @@ export function useSocketEvents() {
     socket.on('room:updated', handleRoomUpdated);
     socket.on('room:deleted', handleRoomDeleted);
     socket.on('displayMedia:updated', handleDisplayMediaUpdated);
+    socket.on('announcements:updated', handleAnnouncementsUpdated);
 
     return () => {
       socket.off('schedule:created', handleScheduleCreated);
@@ -65,6 +71,7 @@ export function useSocketEvents() {
       socket.off('room:updated', handleRoomUpdated);
       socket.off('room:deleted', handleRoomDeleted);
       socket.off('displayMedia:updated', handleDisplayMediaUpdated);
+      socket.off('announcements:updated', handleAnnouncementsUpdated);
     };
   }, [socket, queryClient]);
 }

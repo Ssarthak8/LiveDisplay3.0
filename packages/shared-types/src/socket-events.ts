@@ -10,6 +10,7 @@ export interface ServerToClientEvents {
   'room:deleted': (data: { id: string }) => void;
   'displayContent:updated': () => void;
   'displayMedia:updated': () => void;
+  'announcements:updated': () => void;
 }
 
 export interface ClientToServerEvents {

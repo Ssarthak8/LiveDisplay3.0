@@ -370,3 +370,68 @@ export function useReorderDisplayMedia() {
     },
   });
 }
+
+// ── Announcement Hooks ──
+
+export function useAnnouncements() {
+  return useQuery({
+    queryKey: ['announcements'],
+    queryFn: async () => {
+      const { data } = await api.get('/announcements');
+      return data.data;
+    },
+  });
+}
+
+export function useActiveAnnouncements() {
+  return useQuery({
+    queryKey: ['announcements-active'],
+    queryFn: async () => {
+      const { data } = await api.get('/announcements/active');
+      return data.data;
+    },
+    refetchInterval: 15000, // Refresh every 15s as fallback
+  });
+}
+
+export function useCreateAnnouncement() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (announcementData: { content: string; priority: 'Normal' | 'Important' }) => {
+      const { data } = await api.post('/announcements', announcementData);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['announcements'] });
+      queryClient.invalidateQueries({ queryKey: ['announcements-active'] });
+    },
+  });
+}
+
+export function useUpdateAnnouncement() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...data }: { id: string; content?: string; priority?: 'Normal' | 'Important'; isActive?: boolean }) => {
+      const { data: result } = await api.put(`/announcements/${id}`, data);
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['announcements'] });
+      queryClient.invalidateQueries({ queryKey: ['announcements-active'] });
+    },
+  });
+}
+
+export function useDeleteAnnouncement() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.delete(`/announcements/${id}`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['announcements'] });
+      queryClient.invalidateQueries({ queryKey: ['announcements-active'] });
+    },
+  });
+}
