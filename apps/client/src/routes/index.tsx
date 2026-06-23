@@ -54,7 +54,7 @@ function ProtectedRoute({
       if (user.role === 'superadmin' || user.role === 'admin') {
         return <Navigate to="/admin/dashboard" replace />;
       }
-      return <Navigate to="/dashboard" replace />;
+      return <Navigate to="/viewer" replace />;
     }
   }
 
@@ -73,19 +73,19 @@ function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
     if (user.role === 'superadmin' || user.role === 'admin') {
       return <Navigate to="/admin/dashboard" replace />;
     }
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/viewer" replace />;
   }
   return <>{children}</>;
 }
 
 export const router = createBrowserRouter([
-  // Viewer Layout
+  // Viewer Layout (public schedule board + viewer dashboard)
   {
     element: <ViewerLayout />,
     children: [
       { path: '/', element: <ViewerHome /> },
       {
-        path: '/dashboard',
+        path: '/viewer',
         element: (
           <ProtectedRoute requireRole="viewer">
             <ViewerDashboard />
@@ -94,9 +94,18 @@ export const router = createBrowserRouter([
       },
     ],
   },
-  // Viewer Login
+  // Admin Login (primary)
   {
     path: '/login',
+    element: (
+      <PublicOnlyRoute>
+        <AdminLogin />
+      </PublicOnlyRoute>
+    ),
+  },
+  // Viewer Login
+  {
+    path: '/viewer/login',
     element: (
       <PublicOnlyRoute>
         <ViewerLogin />

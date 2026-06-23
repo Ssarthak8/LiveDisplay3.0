@@ -17,7 +17,7 @@ export default function ViewerLayout() {
   const getLogoLink = () => {
     if (!isAuthenticated || !user) return '/';
     if (user.role === 'superadmin' || user.role === 'admin') return '/admin/dashboard';
-    return '/dashboard';
+    return '/viewer';
   };
 
   return (
@@ -70,7 +70,7 @@ export default function ViewerLayout() {
               {isAuthenticated ? (
                 <div className="flex items-center gap-2">
                   <Link
-                    to={user?.role === 'viewer' ? '/dashboard' : '/admin/dashboard'}
+                    to={user?.role === 'viewer' ? '/viewer' : '/admin/dashboard'}
                     className="btn-secondary py-1.5 px-3 text-xs"
                   >
                     Dashboard

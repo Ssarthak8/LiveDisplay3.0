@@ -49,7 +49,7 @@ export default function ChangePassword() {
         if (updatedUser.role === 'superadmin' || updatedUser.role === 'admin') {
           navigate('/admin/dashboard');
         } else {
-          navigate('/dashboard');
+          navigate('/viewer');
         }
       }
     } catch (err: any) {

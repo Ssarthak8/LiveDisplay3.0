@@ -196,7 +196,7 @@ export default function Login() {
           </form>
 
           <div className="mt-6 pt-5 border-t border-surface-200 dark:border-surface-700 flex flex-col gap-2 items-center">
-            <Link to="/login" className="text-xs text-primary-700 dark:text-primary-400 hover:underline">
+            <Link to="/viewer/login" className="text-xs text-primary-700 dark:text-primary-400 hover:underline">
               Are you a general user? Sign in to Viewer Portal
             </Link>
             <p className="text-xs text-surface-400 text-center mt-2">

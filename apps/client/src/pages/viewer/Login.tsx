@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api';
 import { Building2, Eye, EyeOff, Loader2, CalendarRange } from 'lucide-react';
@@ -30,7 +30,7 @@ export default function ViewerLogin() {
         if (user.role === 'superadmin' || user.role === 'admin') {
           navigate('/admin/dashboard');
         } else {
-          navigate('/dashboard');
+          navigate('/viewer');
         }
       }
     } catch (err: any) {
@@ -163,9 +163,6 @@ export default function ViewerLogin() {
           </form>
 
           <div className="mt-6 pt-5 border-t border-surface-200 dark:border-surface-700 flex flex-col gap-2 items-center">
-            <Link to="/admin/login" className="text-xs text-primary-700 dark:text-primary-400 hover:underline">
-              Are you an administrator? Sign in here
-            </Link>
             <p className="text-xs text-surface-400 mt-2">
               Default: <span className="font-mono">viewer@scheduler.com</span> /&nbsp;
               <span className="font-mono">Viewer@123</span>

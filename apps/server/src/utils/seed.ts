@@ -77,7 +77,7 @@ export async function seedData() {
     { roomNumber: 'Prithvi', building: 'Main Building', capacity: 50 },
     { roomNumber: 'Saksham', building: 'Main Building', capacity: 50 },
     { roomNumber: 'Sankalp', building: 'Main Building', capacity: 50 },
-    { roomNumber: 'Sauwad', building: 'Main Building', capacity: 40 },
+    { roomNumber: 'Sanwaad', building: 'Main Building', capacity: 40 },
     { roomNumber: 'Tej', building: 'Main Building', capacity: 80 },
     { roomNumber: 'Udaan', building: 'Main Building', capacity: 50 },
     { roomNumber: 'Vayu', building: 'Main Building', capacity: 80 },

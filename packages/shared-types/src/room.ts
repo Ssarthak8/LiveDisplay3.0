@@ -11,7 +11,7 @@ export const ROOM_MASTER_DATA = {
   "Prithvi": 50,
   "Saksham": 50,
   "Sankalp": 50,
-  "Sauwad": 40,
+  "Sanwaad": 40,
   "Tej": 80,
   "Udaan": 50,
   "Vayu": 80
